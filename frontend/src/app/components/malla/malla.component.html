@@ -7,85 +7,193 @@
       <span class="saludo">Hola, {{ nombreUsuario }}</span>
     </div>
     <div class="header-right">
-      <button class="btn-agregar" (click)="abrirFormulario()">+ Agregar Ramo</button>
-      <button class="btn-logout" (click)="logout()">Cerrar sesión</button>
+      <button class="btn-secondary" (click)="abrirModalMultiple()">📋 Agregar varios</button>
+      <button class="btn-secondary" (click)="abrirModalImportar()">📂 Importar archivo</button>
+      <button class="btn-primary" (click)="abrirFormulario()">+ Agregar ramo</button>
+      <button class="btn-logout" (click)="logout()">Salir</button>
     </div>
   </header>
 
   <!-- Barra de progreso -->
   <div class="progreso-card">
     <div class="progreso-info">
-      <span>Progreso de la carrera</span>
+      <span>📊 Progreso de la carrera</span>
       <strong>{{ porcentaje }}%</strong>
     </div>
     <div class="barra">
       <div class="barra-fill" [style.width.%]="porcentaje"></div>
     </div>
+    <div class="progreso-stats">
+      <span>✅ {{ ramos | aprobados }} aprobados</span>
+      <span>⏳ {{ ramos.length - (ramos | aprobados) }} pendientes</span>
+      <span>📚 {{ ramos.length }} total</span>
+    </div>
   </div>
 
   <!-- Malla vacía -->
   <div class="vacio" *ngIf="ramos.length === 0">
-    <p>📚 Aún no tienes ramos. ¡Agrega el primero!</p>
-  </div>
-
-  <!-- Semestres -->
-  <div class="semestres">
-    <div class="semestre" *ngFor="let sem of semestres">
-      <h3>Semestre {{ sem }}</h3>
-      <div class="ramos-grid">
-        <div
-          class="ramo-card"
-          *ngFor="let ramo of getRamosPorSemestre(sem)"
-          [class.aprobado]="ramo.aprobado"
-          [class.pendiente]="!ramo.aprobado">
-
-          <div class="ramo-header">
-            <span class="estado">{{ ramo.aprobado ? '✅' : '⏳' }}</span>
-            <div class="ramo-acciones">
-              <button class="btn-icon" (click)="editarRamo(ramo)" title="Editar">✏️</button>
-              <button class="btn-icon" (click)="eliminarRamo(ramo.id!)" title="Eliminar">🗑️</button>
-            </div>
-          </div>
-
-          <p class="ramo-nombre">{{ ramo.nombre }}</p>
-          <p class="ramo-nota" *ngIf="ramo.nota">Nota: {{ ramo.nota }}</p>
-
-          <button class="btn-toggle" (click)="toggleAprobado(ramo)">
-            {{ ramo.aprobado ? 'Marcar pendiente' : 'Marcar aprobado' }}
-          </button>
-        </div>
+    <div class="vacio-inner">
+      <p>📚 Tu malla está vacía</p>
+      <p class="vacio-sub">Agrega ramos uno por uno, varios a la vez, o importa un archivo</p>
+      <div class="vacio-acciones">
+        <button class="btn-primary" (click)="abrirFormulario()">+ Agregar ramo</button>
+        <button class="btn-secondary" (click)="abrirModalMultiple()">📋 Agregar varios</button>
+        <button class="btn-secondary" (click)="abrirModalImportar()">📂 Importar</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal formulario -->
+  <!-- Malla horizontal por semestres -->
+  <div class="malla-scroll" *ngIf="ramos.length > 0">
+    <div class="malla-grid">
+      <div class="semestre-col" *ngFor="let sem of semestres">
+
+        <div class="semestre-header">
+          <span>Semestre {{ sem }}</span>
+          <div class="semestre-acciones">
+            <button class="btn-sem" (click)="abrirFormulario(sem)" title="Agregar ramo">+</button>
+            <button class="btn-sem" (click)="abrirModalMultiple(sem)" title="Agregar varios">📋</button>
+          </div>
+        </div>
+
+        <div class="ramos-lista">
+          <div
+            class="ramo-card"
+            *ngFor="let ramo of getRamosPorSemestre(sem)"
+            [class.aprobado]="ramo.aprobado"
+            [class.pendiente]="!ramo.aprobado"
+            (click)="toggleAprobado(ramo)">
+
+            <div class="ramo-top">
+              <span class="estado-icon">{{ ramo.aprobado ? '✅' : '⏳' }}</span>
+              <div class="ramo-btns" (click)="$event.stopPropagation()">
+                <button (click)="editarRamo(ramo)" title="Editar">✏️</button>
+                <button (click)="eliminarRamo(ramo.id!)" title="Eliminar">🗑️</button>
+              </div>
+            </div>
+
+            <p class="ramo-nombre">{{ ramo.nombre }}</p>
+            <p class="ramo-nota" *ngIf="ramo.nota">Nota: {{ ramo.nota }}</p>
+          </div>
+        </div>
+
+        <div class="sem-footer">
+          {{ getRamosPorSemestre(sem).length }} ramos •
+          {{ getRamosPorSemestre(sem) | aprobados }} aprobados
+        </div>
+
+      </div>
+
+      <!-- Botón agregar semestre nuevo -->
+      <div class="semestre-col nuevo-sem">
+        <button class="btn-nuevo-sem" (click)="abrirModalMultiple(semestres.length + 1)">
+          + Nuevo semestre
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Modal: agregar ramo individual ── -->
   <div class="overlay" *ngIf="mostrarFormulario" (click)="mostrarFormulario = false">
     <div class="modal" (click)="$event.stopPropagation()">
-      <h3>{{ editando ? 'Editar Ramo' : 'Nuevo Ramo' }}</h3>
+      <h3>{{ editando ? '✏️ Editar Ramo' : '➕ Nuevo Ramo' }}</h3>
 
       <div class="form-group">
         <label>Nombre del ramo</label>
-        <input type="text" [(ngModel)]="ramoActual.nombre" placeholder="Ej: Cálculo I" />
+        <input type="text" [(ngModel)]="ramoActual.nombre" placeholder="Ej: Cálculo I" autofocus />
       </div>
 
-      <div class="form-group">
-        <label>Semestre</label>
-        <input type="number" [(ngModel)]="ramoActual.semestre" min="1" max="12" />
+      <div class="form-row">
+        <div class="form-group">
+          <label>Semestre</label>
+          <input type="number" [(ngModel)]="ramoActual.semestre" min="1" max="12" />
+        </div>
+        <div class="form-group">
+          <label>Nota (opcional)</label>
+          <input type="number" [(ngModel)]="ramoActual.nota" min="1" max="7" step="0.1" />
+        </div>
       </div>
 
-      <div class="form-group">
-        <label>Nota (opcional)</label>
-        <input type="number" [(ngModel)]="ramoActual.nota" min="1" max="7" step="0.1" />
-      </div>
-
-      <div class="form-group check">
+      <div class="form-check">
         <input type="checkbox" [(ngModel)]="ramoActual.aprobado" id="aprobado" />
-        <label for="aprobado">Aprobado</label>
+        <label for="aprobado">Marcar como aprobado</label>
       </div>
 
       <div class="modal-acciones">
         <button class="btn-cancelar" (click)="mostrarFormulario = false">Cancelar</button>
         <button class="btn-guardar" (click)="guardarRamo()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: agregar varios ── -->
+  <div class="overlay" *ngIf="mostrarModalMultiple" (click)="mostrarModalMultiple = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>📋 Agregar varios ramos</h3>
+
+      <div class="form-group">
+        <label>Semestre</label>
+        <input type="number" [(ngModel)]="semestreSeleccionado" min="1" max="12" />
+      </div>
+
+      <div class="form-group">
+        <label>Ramos (uno por línea)</label>
+        <textarea
+          [(ngModel)]="ramosTexto"
+          rows="8"
+          placeholder="Cálculo I&#10;Álgebra&#10;Programación&#10;Física...">
+        </textarea>
+      </div>
+
+      <div class="modal-acciones">
+        <button class="btn-cancelar" (click)="mostrarModalMultiple = false">Cancelar</button>
+        <button class="btn-guardar" (click)="guardarMultiples()">Agregar todos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: importar archivo ── -->
+  <div class="overlay" *ngIf="mostrarModalImportar" (click)="mostrarModalImportar = false">
+    <div class="modal modal-grande" (click)="$event.stopPropagation()">
+      <h3>📂 Importar malla desde archivo</h3>
+
+      <div class="import-info">
+        <p>Sube un archivo <strong>.csv</strong> o <strong>.txt</strong> con este formato:</p>
+        <code>Nombre del ramo, Semestre</code>
+        <p class="ejemplo">Ejemplo:<br>
+          Cálculo I, 1<br>
+          Álgebra, 1<br>
+          Programación, 2
+        </p>
+      </div>
+
+      <div class="drop-zone" (click)="fileInput.click()">
+        <input #fileInput type="file" accept=".csv,.txt" (change)="onArchivoSeleccionado($event)" hidden />
+        <span *ngIf="!archivoSeleccionado">📁 Haz clic para seleccionar archivo</span>
+        <span *ngIf="archivoSeleccionado">✅ {{ archivoSeleccionado.name }}</span>
+      </div>
+
+      <button class="btn-procesar" (click)="procesarArchivo()" *ngIf="archivoSeleccionado && !mostrarPreview">
+        {{ importando ? 'Procesando...' : 'Procesar archivo' }}
+      </button>
+
+      <!-- Preview -->
+      <div class="preview" *ngIf="mostrarPreview">
+        <p><strong>{{ ramosImportados.length }} ramos detectados:</strong></p>
+        <div class="preview-lista">
+          <div class="preview-item" *ngFor="let r of ramosImportados">
+            <span>{{ r.nombre }}</span>
+            <span class="preview-sem">Sem {{ r.semestre }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-acciones">
+        <button class="btn-cancelar" (click)="mostrarModalImportar = false">Cancelar</button>
+        <button class="btn-guardar" *ngIf="mostrarPreview" (click)="confirmarImportacion()">
+          Importar {{ ramosImportados.length }} ramos
+        </button>
       </div>
     </div>
   </div>
