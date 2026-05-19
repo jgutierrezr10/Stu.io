@@ -24,6 +24,7 @@ public class RamoService {
         dto.setNombre(ramo.getNombre());
         dto.setSemestre(ramo.getSemestre());
         dto.setAprobado(ramo.getAprobado());
+        dto.setCursando(ramo.getCursando());
         dto.setNota(ramo.getNota());
         return dto;
     }
@@ -42,6 +43,7 @@ public class RamoService {
         ramo.setNombre(dto.getNombre());
         ramo.setSemestre(dto.getSemestre());
         ramo.setAprobado(dto.getAprobado() != null ? dto.getAprobado() : false);
+        ramo.setCursando(dto.getCursando() != null ? dto.getCursando() : false);
         ramo.setNota(dto.getNota());
         ramo.setUsuario(usuario);
         return toDTO(ramoRepository.save(ramo));
@@ -55,7 +57,8 @@ public class RamoService {
         }
         ramo.setNombre(dto.getNombre());
         ramo.setSemestre(dto.getSemestre());
-        ramo.setAprobado(dto.getAprobado());
+        ramo.setAprobado(dto.getAprobado() != null ? dto.getAprobado() : false);
+        ramo.setCursando(dto.getCursando() != null ? dto.getCursando() : false);
         ramo.setNota(dto.getNota());
         return toDTO(ramoRepository.save(ramo));
     }
@@ -92,6 +95,7 @@ public class RamoService {
             ramo.setNombre(dto.getNombre());
             ramo.setSemestre(dto.getSemestre());
             ramo.setAprobado(dto.getAprobado() != null ? dto.getAprobado() : false);
+            ramo.setCursando(dto.getCursando() != null ? dto.getCursando() : false);
             ramo.setNota(dto.getNota());
             ramo.setUsuario(usuario);
             return ramo;

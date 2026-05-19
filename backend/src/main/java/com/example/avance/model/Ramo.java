@@ -21,6 +21,9 @@ public class Ramo {
     @Column(nullable = false)
     private Boolean aprobado = false;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private Boolean cursando = false;
+
     @Column(name = "nota_decimal")
     private Double nota;
 

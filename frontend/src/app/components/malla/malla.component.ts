@@ -25,7 +25,7 @@ export class MallaComponent implements OnInit {
   // Modal individual
   mostrarFormulario = false;
   editando = false;
-  ramoActual: Ramo = { nombre: '', semestre: 1, aprobado: false };
+  ramoActual: Ramo = { nombre: '', semestre: 1, aprobado: false, cursando: false };
 
   // Modal múltiple por semestre
   mostrarModalMultiple = false;
@@ -44,6 +44,12 @@ export class MallaComponent implements OnInit {
   mallasPredeterminadas = MALLAS_PREDETERMINADAS;
   mallaSeleccionada: MallaPredeterminada | null = null;
   cargandoMalla = false;
+
+  // Modal confirmación
+  mostrarModalConfirmacion = false;
+  confirmacionTitulo = '';
+  confirmacionMensaje = '';
+  accionConfirmacion: () => void = () => {};
 
   constructor(
     private ramoService: RamoService,
@@ -94,6 +100,14 @@ export class MallaComponent implements OnInit {
     return this.ramos.filter(r => r.semestre === semestre);
   }
 
+  getCursandoCount(): number {
+    return this.ramos.filter(r => r.cursando).length;
+  }
+
+  getPendienteCount(): number {
+    return this.ramos.filter(r => !r.aprobado && !r.cursando).length;
+  }
+
   getSemestreColorClass(semestre: number): string {
     if (semestre >= 1 && semestre <= 10) {
       return `sem-color-${semestre}`;
@@ -103,7 +117,7 @@ export class MallaComponent implements OnInit {
 
   // ─── Modal individual ───────────────────────────────
   abrirFormulario(semestre?: number) {
-    this.ramoActual = { nombre: '', semestre: semestre ?? 1, aprobado: false };
+    this.ramoActual = { nombre: '', semestre: semestre ?? 1, aprobado: false, cursando: false };
     this.editando = false;
     this.mostrarFormulario = true;
   }
@@ -112,6 +126,18 @@ export class MallaComponent implements OnInit {
     this.ramoActual = { ...ramo };
     this.editando = true;
     this.mostrarFormulario = true;
+  }
+
+  onAprobadoChange() {
+    if (this.ramoActual.aprobado) {
+      this.ramoActual.cursando = false;
+    }
+  }
+
+  onCursandoChange() {
+    if (this.ramoActual.cursando) {
+      this.ramoActual.aprobado = false;
+    }
   }
 
   guardarRamo() {
@@ -136,25 +162,52 @@ export class MallaComponent implements OnInit {
   }
 
   eliminarRamo(id: number) {
-    if (confirm('¿Eliminar este ramo?')) {
+    this.confirmacionTitulo = 'Eliminar ramo';
+    this.confirmacionMensaje = '¿Estás seguro de que deseas eliminar este ramo?';
+    this.accionConfirmacion = () => {
       this.ramoService.eliminarRamo(id).subscribe({
-        next: () => this.cargarRamos(),
+        next: () => {
+          this.mostrarModalConfirmacion = false;
+          this.cargarRamos();
+        },
         error: () => alert('Error al eliminar el ramo')
       });
-    }
+    };
+    this.mostrarModalConfirmacion = true;
   }
 
   eliminarTodos() {
-    if (confirm('¿Estás seguro de que deseas eliminar TODOS los ramos? Esta acción no se puede deshacer.')) {
+    this.confirmacionTitulo = 'Eliminar todos los ramos';
+    this.confirmacionMensaje = '¿Estás seguro de que deseas eliminar TODOS los ramos? Esta acción no se puede deshacer.';
+    this.accionConfirmacion = () => {
       this.ramoService.eliminarTodos().subscribe({
-        next: () => this.cargarRamos(),
+        next: () => {
+          this.mostrarModalConfirmacion = false;
+          this.cargarRamos();
+        },
         error: () => alert('Error al eliminar todos los ramos')
       });
-    }
+    };
+    this.mostrarModalConfirmacion = true;
   }
 
-  toggleAprobado(ramo: Ramo) {
-    const actualizado = { ...ramo, aprobado: !ramo.aprobado };
+  toggleEstado(ramo: Ramo) {
+    let nuevoAprobado = false;
+    let nuevoCursando = false;
+
+    if (!ramo.aprobado && !ramo.cursando) {
+      // De pendiente pasa a cursando
+      nuevoCursando = true;
+    } else if (ramo.cursando) {
+      // De cursando pasa a aprobado
+      nuevoAprobado = true;
+    } else {
+      // De aprobado pasa a pendiente
+      nuevoAprobado = false;
+      nuevoCursando = false;
+    }
+
+    const actualizado = { ...ramo, aprobado: nuevoAprobado, cursando: nuevoCursando };
     this.ramoService.actualizarRamo(ramo.id!, actualizado).subscribe({
       next: () => this.cargarRamos(),
       error: () => alert('Error al actualizar el estado')

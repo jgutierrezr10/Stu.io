@@ -3,5 +3,6 @@ export interface Ramo {
   nombre: string;
   semestre: number;
   aprobado: boolean;
+  cursando?: boolean;
   nota?: number;
 }

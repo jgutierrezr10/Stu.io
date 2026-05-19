@@ -15,7 +15,7 @@ export const MALLAS_PREDETERMINADAS: MallaPredeterminada[] = [
   {
     id: 'ici-ucn',
     nombre: 'Ingeniería Civil Informática',
-    universidad: 'Universidad Católica del Norte',
+    universidad: 'Universidad San Sebastian',
     descripcion: 'Malla completa de Ingeniería Civil Informática (10 semestres)',
     icono: 'bi-cpu',
     totalRamos: 58,
