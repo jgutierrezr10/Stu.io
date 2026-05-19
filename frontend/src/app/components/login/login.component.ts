@@ -20,12 +20,22 @@ export class LoginComponent {
   constructor(private authService: AuthService, private router: Router) {}
 
   login() {
+    // Validaciones
+    if (!this.email.trim()) {
+      this.error = 'Ingresa tu email o nombre de usuario';
+      return;
+    }
+    if (!this.password) {
+      this.error = 'Ingresa tu contraseña';
+      return;
+    }
+
     this.error = '';
     this.cargando = true;
-    this.authService.login({ email: this.email, password: this.password }).subscribe({
+    this.authService.login({ email: this.email.trim(), password: this.password }).subscribe({
       next: () => this.router.navigate(['/malla']),
-      error: () => {
-        this.error = 'Email o contraseña incorrectos';
+      error: (err) => {
+        this.error = err.error?.message || 'Email o contraseña incorrectos';
         this.cargando = false;
       }
     });

@@ -77,4 +77,36 @@ public class RamoService {
         long aprobados = ramoRepository.countByUsuarioIdAndAprobadoTrue(usuario.getId());
         return (int) ((aprobados * 100) / total);
     }
+
+    @org.springframework.transaction.annotation.Transactional
+    public List<RamoDTO> crearRamosBulk(List<RamoDTO> dtos, String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Eliminar ramos existentes del usuario antes de cargar la malla
+        List<Ramo> existentes = ramoRepository.findByUsuarioId(usuario.getId());
+        ramoRepository.deleteAll(existentes);
+
+        List<Ramo> nuevos = dtos.stream().map(dto -> {
+            Ramo ramo = new Ramo();
+            ramo.setNombre(dto.getNombre());
+            ramo.setSemestre(dto.getSemestre());
+            ramo.setAprobado(dto.getAprobado() != null ? dto.getAprobado() : false);
+            ramo.setNota(dto.getNota());
+            ramo.setUsuario(usuario);
+            return ramo;
+        }).collect(Collectors.toList());
+
+        return ramoRepository.saveAll(nuevos)
+                .stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void eliminarTodosLosRamos(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        List<Ramo> existentes = ramoRepository.findByUsuarioId(usuario.getId());
+        ramoRepository.deleteAll(existentes);
+    }
 }

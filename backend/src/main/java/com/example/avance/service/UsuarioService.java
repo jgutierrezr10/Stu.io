@@ -32,7 +32,9 @@ public class UsuarioService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        // Buscar por email o por nombre
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+                .or(() -> usuarioRepository.findByNombre(request.getEmail()))
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         if (!passwordEncoder.matches(request.getPassword(), usuario.getPassword())) {

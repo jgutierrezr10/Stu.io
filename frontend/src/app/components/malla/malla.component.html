@@ -14,11 +14,17 @@
       </div>
     </div>
     <div class="header-right">
+      <button class="btn-highlight" (click)="abrirModalMalla()">
+        <i class="bi bi-grid-3x3-gap-fill"></i> Malla predeterminada
+      </button>
       <button class="btn-secondary" (click)="abrirModalMultiple()">
         <i class="bi bi-list-check"></i> Agregar varios
       </button>
       <button class="btn-secondary" (click)="abrirModalImportar()">
         <i class="bi bi-file-earmark-arrow-up"></i> Importar
+      </button>
+      <button class="btn-danger" (click)="eliminarTodos()" *ngIf="ramos.length > 0">
+        <i class="bi bi-trash3-fill"></i> Eliminar todos
       </button>
       <button class="btn-primary" (click)="abrirFormulario()">
         <i class="bi bi-plus-lg"></i> Agregar ramo
@@ -77,17 +83,25 @@
         <i class="bi bi-journal-bookmark"></i>
       </div>
       <p>Tu malla está vacía</p>
-      <p class="vacio-sub">Agrega ramos uno por uno, varios a la vez, o importa un archivo</p>
-      <div class="vacio-acciones">
-        <button class="btn-primary" (click)="abrirFormulario()">
-          <i class="bi bi-plus-lg"></i> Agregar ramo
+      <p class="vacio-sub">Carga una malla predeterminada o agrega ramos manualmente</p>
+      <div class="vacio-acciones-stack">
+        <button class="btn-destacado" (click)="abrirModalMalla()">
+          <i class="bi bi-grid-3x3-gap-fill"></i> Cargar malla predeterminada
         </button>
-        <button class="btn-secondary-dark" (click)="abrirModalMultiple()">
-          <i class="bi bi-list-check"></i> Agregar varios
-        </button>
-        <button class="btn-secondary-dark" (click)="abrirModalImportar()">
-          <i class="bi bi-file-earmark-arrow-up"></i> Importar
-        </button>
+        <div class="vacio-divider">
+          <span>o agrega manualmente</span>
+        </div>
+        <div class="vacio-acciones">
+          <button class="btn-primary" (click)="abrirFormulario()">
+            <i class="bi bi-plus-lg"></i> Agregar ramo
+          </button>
+          <button class="btn-secondary-dark" (click)="abrirModalMultiple()">
+            <i class="bi bi-list-check"></i> Agregar varios
+          </button>
+          <button class="btn-secondary-dark" (click)="abrirModalImportar()">
+            <i class="bi bi-file-earmark-arrow-up"></i> Importar
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -296,6 +310,62 @@
         </button>
         <button class="btn-guardar" *ngIf="mostrarPreview" (click)="confirmarImportacion()">
           <i class="bi bi-download"></i> Importar {{ ramosImportados.length }} ramos
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: malla predeterminada ── -->
+  <div class="overlay" *ngIf="mostrarModalMalla" (click)="mostrarModalMalla = false">
+    <div class="modal modal-grande" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-grid-3x3-gap-fill"></i> Mallas Predeterminadas</h3>
+        <button class="modal-close" (click)="mostrarModalMalla = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <p class="modal-desc">Selecciona una malla para cargarla automáticamente con todos los ramos.</p>
+
+      <div class="malla-preset-warning" *ngIf="ramos.length > 0">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>Cargar una malla predeterminada <strong>reemplazará</strong> todos tus ramos actuales.</span>
+      </div>
+
+      <div class="malla-presets-list">
+        <div
+          class="malla-preset-card"
+          *ngFor="let malla of mallasPredeterminadas"
+          [class.selected]="mallaSeleccionada?.id === malla.id"
+          (click)="seleccionarMalla(malla)">
+          <div class="preset-icon">
+            <i class="bi" [ngClass]="malla.icono"></i>
+          </div>
+          <div class="preset-info">
+            <h4>{{ malla.nombre }}</h4>
+            <p class="preset-uni">{{ malla.universidad }}</p>
+            <div class="preset-stats">
+              <span><i class="bi bi-book"></i> {{ malla.totalRamos }} ramos</span>
+              <span><i class="bi bi-calendar3"></i> {{ malla.semestres }} semestres</span>
+            </div>
+          </div>
+          <div class="preset-check" *ngIf="mallaSeleccionada?.id === malla.id">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-acciones">
+        <button class="btn-cancelar" (click)="mostrarModalMalla = false">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </button>
+        <button
+          class="btn-guardar"
+          [disabled]="!mallaSeleccionada || cargandoMalla"
+          (click)="confirmarCargarMalla()">
+          <i class="bi bi-download" *ngIf="!cargandoMalla"></i>
+          <i class="bi bi-arrow-repeat spin" *ngIf="cargandoMalla"></i>
+          {{ cargandoMalla ? 'Cargando...' : 'Cargar malla' }}
         </button>
       </div>
     </div>

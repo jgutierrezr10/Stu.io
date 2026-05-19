@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { RamoService } from '../../services/ramo.service';
 import { Ramo } from '../../models/ramo.model';
 import { AprobadosPipe } from '../../pipes/aprobados.pipe';
+import { MALLAS_PREDETERMINADAS, MallaPredeterminada } from '../../data/mallas-predeterminadas';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-malla',
@@ -37,9 +39,16 @@ export class MallaComponent implements OnInit {
   ramosImportados: Ramo[] = [];
   mostrarPreview = false;
 
+  // Modal malla predeterminada
+  mostrarModalMalla = false;
+  mallasPredeterminadas = MALLAS_PREDETERMINADAS;
+  mallaSeleccionada: MallaPredeterminada | null = null;
+  cargandoMalla = false;
+
   constructor(
     private ramoService: RamoService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -48,10 +57,19 @@ export class MallaComponent implements OnInit {
   }
 
   cargarRamos() {
-    this.ramoService.getRamos().subscribe(ramos => {
-      this.ramos = ramos;
-      this.actualizarSemestres();
-      this.calcularAvance();
+    this.ramoService.getRamos().subscribe({
+      next: (ramos) => {
+        this.ramos = ramos;
+        this.actualizarSemestres();
+        this.calcularAvance();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.ramos = [];
+        this.semestres = [];
+        this.porcentaje = 0;
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -60,8 +78,15 @@ export class MallaComponent implements OnInit {
   }
 
   calcularAvance() {
-    this.ramoService.getAvance().subscribe(res => {
-      this.porcentaje = res.porcentaje;
+    this.ramoService.getAvance().subscribe({
+      next: (res) => {
+        this.porcentaje = res.porcentaje;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.porcentaje = 0;
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -92,27 +117,48 @@ export class MallaComponent implements OnInit {
   guardarRamo() {
     if (!this.ramoActual.nombre.trim()) return;
     if (this.editando && this.ramoActual.id) {
-      this.ramoService.actualizarRamo(this.ramoActual.id, this.ramoActual).subscribe(() => {
-        this.mostrarFormulario = false;
-        this.cargarRamos();
+      this.ramoService.actualizarRamo(this.ramoActual.id, this.ramoActual).subscribe({
+        next: () => {
+          this.mostrarFormulario = false;
+          this.cargarRamos();
+        },
+        error: () => alert('Error al actualizar el ramo')
       });
     } else {
-      this.ramoService.crearRamo(this.ramoActual).subscribe(() => {
-        this.mostrarFormulario = false;
-        this.cargarRamos();
+      this.ramoService.crearRamo(this.ramoActual).subscribe({
+        next: () => {
+          this.mostrarFormulario = false;
+          this.cargarRamos();
+        },
+        error: () => alert('Error al crear el ramo')
       });
     }
   }
 
   eliminarRamo(id: number) {
     if (confirm('¿Eliminar este ramo?')) {
-      this.ramoService.eliminarRamo(id).subscribe(() => this.cargarRamos());
+      this.ramoService.eliminarRamo(id).subscribe({
+        next: () => this.cargarRamos(),
+        error: () => alert('Error al eliminar el ramo')
+      });
+    }
+  }
+
+  eliminarTodos() {
+    if (confirm('¿Estás seguro de que deseas eliminar TODOS los ramos? Esta acción no se puede deshacer.')) {
+      this.ramoService.eliminarTodos().subscribe({
+        next: () => this.cargarRamos(),
+        error: () => alert('Error al eliminar todos los ramos')
+      });
     }
   }
 
   toggleAprobado(ramo: Ramo) {
     const actualizado = { ...ramo, aprobado: !ramo.aprobado };
-    this.ramoService.actualizarRamo(ramo.id!, actualizado).subscribe(() => this.cargarRamos());
+    this.ramoService.actualizarRamo(ramo.id!, actualizado).subscribe({
+      next: () => this.cargarRamos(),
+      error: () => alert('Error al actualizar el estado')
+    });
   }
 
   // ─── Modal múltiple ──────────────────────────────────
@@ -130,17 +176,23 @@ export class MallaComponent implements OnInit {
 
     if (nombres.length === 0) return;
 
-    const promesas = nombres.map(nombre =>
+    const peticiones = nombres.map(nombre =>
       this.ramoService.crearRamo({
         nombre,
         semestre: this.semestreSeleccionado,
         aprobado: false
-      }).toPromise()
+      })
     );
 
-    Promise.all(promesas).then(() => {
-      this.mostrarModalMultiple = false;
-      this.cargarRamos();
+    forkJoin(peticiones).subscribe({
+      next: () => {
+        this.mostrarModalMultiple = false;
+        this.cargarRamos();
+      },
+      error: () => {
+        alert('Error al agregar algunos ramos');
+        this.cargarRamos();
+      }
     });
   }
 
@@ -199,12 +251,46 @@ export class MallaComponent implements OnInit {
   }
 
   confirmarImportacion() {
-    const promesas = this.ramosImportados.map(r =>
-      this.ramoService.crearRamo(r).toPromise()
+    const peticiones = this.ramosImportados.map(r =>
+      this.ramoService.crearRamo(r)
     );
-    Promise.all(promesas).then(() => {
-      this.mostrarModalImportar = false;
-      this.cargarRamos();
+
+    forkJoin(peticiones).subscribe({
+      next: () => {
+        this.mostrarModalImportar = false;
+        this.cargarRamos();
+      },
+      error: () => {
+        alert('Error al importar algunos ramos');
+        this.cargarRamos();
+      }
+    });
+  }
+
+  // ─── Modal malla predeterminada ─────────────────────
+  abrirModalMalla() {
+    this.mallaSeleccionada = null;
+    this.mostrarModalMalla = true;
+  }
+
+  seleccionarMalla(malla: MallaPredeterminada) {
+    this.mallaSeleccionada = malla;
+  }
+
+  confirmarCargarMalla() {
+    if (!this.mallaSeleccionada) return;
+    this.cargandoMalla = true;
+
+    this.ramoService.cargarMallaPredeterminada(this.mallaSeleccionada.ramos).subscribe({
+      next: () => {
+        this.cargandoMalla = false;
+        this.mostrarModalMalla = false;
+        this.cargarRamos();
+      },
+      error: () => {
+        this.cargandoMalla = false;
+        alert('Error al cargar la malla predeterminada');
+      }
     });
   }
 

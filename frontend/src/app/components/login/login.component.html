@@ -32,16 +32,16 @@
 
       <div class="form-group">
         <label for="login-email">
-          <i class="bi bi-envelope"></i> Email
+          <i class="bi bi-person"></i> Email o nombre de usuario
         </label>
         <div class="input-wrapper">
-          <i class="bi bi-envelope input-icon"></i>
+          <i class="bi bi-person input-icon"></i>
           <input
             id="login-email"
-            type="email"
+            type="text"
             [(ngModel)]="email"
-            placeholder="tu@email.com"
-            autocomplete="email"
+            placeholder="tu@email.com o tu nombre"
+            autocomplete="username"
             autofocus />
         </div>
       </div>

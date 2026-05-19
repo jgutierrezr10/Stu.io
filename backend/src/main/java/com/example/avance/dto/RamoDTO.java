@@ -8,5 +8,5 @@ public class RamoDTO {
     private String nombre;
     private Integer semestre;
     private Boolean aprobado;
-    private Integer nota;
+    private Double nota;
 }

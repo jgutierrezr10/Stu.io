@@ -28,6 +28,14 @@ export class RamoService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
+  eliminarTodos(): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/todos`);
+  }
+
+  cargarMallaPredeterminada(ramos: Ramo[]): Observable<Ramo[]> {
+    return this.http.post<Ramo[]>(`${this.apiUrl}/bulk`, ramos);
+  }
+
   getAvance(): Observable<{ porcentaje: number }> {
     return this.http.get<{ porcentaje: number }>(`${this.apiUrl}/avance`);
   }

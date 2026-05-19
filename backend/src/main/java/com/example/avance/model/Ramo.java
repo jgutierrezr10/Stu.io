@@ -21,7 +21,8 @@ public class Ramo {
     @Column(nullable = false)
     private Boolean aprobado = false;
 
-    private Integer nota;
+    @Column(name = "nota_decimal")
+    private Double nota;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)

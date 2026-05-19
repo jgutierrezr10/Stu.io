@@ -43,6 +43,18 @@ public class RamoController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/todos")
+    public ResponseEntity<Void> eliminarTodosLosRamos(@AuthenticationPrincipal UserDetails userDetails) {
+        ramoService.eliminarTodosLosRamos(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/bulk")
+    public ResponseEntity<List<RamoDTO>> crearRamosBulk(@RequestBody List<RamoDTO> dtos,
+                                                         @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(ramoService.crearRamosBulk(dtos, userDetails.getUsername()));
+    }
+
     @GetMapping("/avance")
     public ResponseEntity<Map<String, Integer>> getAvance(
             @AuthenticationPrincipal UserDetails userDetails) {

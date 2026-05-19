@@ -21,11 +21,25 @@ export class RegisterComponent {
   constructor(private authService: AuthService, private router: Router) {}
 
   register() {
+    // Validaciones
+    if (!this.nombre.trim()) {
+      this.error = 'El nombre es obligatorio';
+      return;
+    }
+    if (!this.email.trim()) {
+      this.error = 'El email es obligatorio';
+      return;
+    }
+    if (!this.password || this.password.length < 6) {
+      this.error = 'La contraseña debe tener al menos 6 caracteres';
+      return;
+    }
+
     this.error = '';
     this.cargando = true;
     this.authService.register({
-      nombre: this.nombre,
-      email: this.email,
+      nombre: this.nombre.trim(),
+      email: this.email.trim(),
       password: this.password
     }).subscribe({
       next: () => this.router.navigate(['/malla']),
