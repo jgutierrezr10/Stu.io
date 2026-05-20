@@ -16,33 +16,65 @@ import { Ramo } from '../../models/ramo.model';
 export class Horario implements OnInit {
   ramosCursando: Ramo[] = [];
   guardando = false;
-  
-  dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-  horas = [
-    '08:10 - 09:30',
-    '09:40 - 11:00',
-    '11:10 - 12:30',
-    '13:30 - 14:50',
-    '15:00 - 16:20',
-    '16:30 - 17:50'
+
+  dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+  // Nombres internos (llaves de base de datos)
+  bloquesKeys = [
+    'Bloque 1', 'Bloque 2', 'Bloque 3', 'Bloque 4',
+    'Bloque 5', 'Bloque 6', 'Bloque 7', 'Bloque 8'
   ];
+
+  // Etiquetas visuales por defecto (editables)
+  etiquetasHoraPorDefecto: { [key: string]: string } = {
+    'Bloque 1': '08:00 - 09:20',
+    'Bloque 2': '09:30 - 10:50',
+    'Bloque 3': '11:00 - 12:20',
+    'Bloque 4': '12:30 - 13:50',
+    'Bloque 5': '14:00 - 15:20',
+    'Bloque 6': '16:00 - 17:20',
+    'Bloque 7': '17:30 - 18:50',
+    'Bloque 8': '19:00 - 20:10' // Aproximación para que llegue hasta las 20:00+
+  };
+
+  etiquetasHora: { [key: string]: string } = {};
+  editandoBloque: string | null = null; // Guarda la llave del bloque que se está editando
 
   grilla: BloqueHorarioDTO[] = [];
 
   constructor(
     private ramoService: RamoService,
     private horarioService: HorarioService
-  ) {}
+  ) { }
 
   ngOnInit() {
+    this.cargarEtiquetasGuardadas();
     this.inicializarGrilla();
     this.cargarRamosCursando();
     this.cargarHorarioDesdeAPI();
   }
 
+  cargarEtiquetasGuardadas() {
+    const guardadas = localStorage.getItem('etiquetas_hora');
+    if (guardadas) {
+      this.etiquetasHora = JSON.parse(guardadas);
+    } else {
+      this.etiquetasHora = { ...this.etiquetasHoraPorDefecto };
+    }
+  }
+
+  guardarEtiquetas() {
+    localStorage.setItem('etiquetas_hora', JSON.stringify(this.etiquetasHora));
+    this.editandoBloque = null;
+  }
+
+  iniciarEdicion(bloqueKey: string) {
+    this.editandoBloque = bloqueKey;
+  }
+
   inicializarGrilla() {
     this.grilla = [];
-    for (let hora of this.horas) {
+    for (let hora of this.bloquesKeys) {
       for (let dia of this.dias) {
         this.grilla.push({
           id: `${dia}-${hora}`,

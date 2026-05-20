@@ -27,21 +27,40 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let hora of horas">
-            <td class="time-cell">{{ hora }}</td>
+          <tr *ngFor="let bloqueKey of bloquesKeys">
+            <td class="time-cell" 
+                (click)="iniciarEdicion(bloqueKey)" 
+                [class.editing]="editandoBloque === bloqueKey">
+              
+              <!-- Vista Normal -->
+              <span *ngIf="editandoBloque !== bloqueKey">
+                {{ etiquetasHora[bloqueKey] }}
+                <i class="bi bi-pencil edit-icon"></i>
+              </span>
+
+              <!-- Modo Edición -->
+              <input *ngIf="editandoBloque === bloqueKey" 
+                     type="text" 
+                     class="time-input"
+                     [(ngModel)]="etiquetasHora[bloqueKey]"
+                     (blur)="guardarEtiquetas()"
+                     (keyup.enter)="guardarEtiquetas()"
+                     autofocus />
+            </td>
+
             <td *ngFor="let dia of dias" class="drop-cell">
-              <div class="cell-content" [class.has-ramo]="getBloque(dia, hora).ramoId !== null">
+              <div class="cell-content" [class.has-ramo]="getBloque(dia, bloqueKey).ramoId !== null">
                 <select 
                   class="ramo-select" 
-                  [ngModel]="getBloque(dia, hora).ramoId" 
-                  (change)="asignarRamo(getBloque(dia, hora), $event)">
+                  [ngModel]="getBloque(dia, bloqueKey).ramoId" 
+                  (change)="asignarRamo(getBloque(dia, bloqueKey), $event)">
                   <option [ngValue]="null">---</option>
                   <option *ngFor="let ramo of ramosCursando" [value]="ramo.id">
                     {{ ramo.nombre }}
                   </option>
                 </select>
-                <div class="ramo-display" *ngIf="getBloque(dia, hora).ramoId">
-                  {{ getRamoNombre(getBloque(dia, hora).ramoId) }}
+                <div class="ramo-display" *ngIf="getBloque(dia, bloqueKey).ramoId">
+                  {{ getRamoNombre(getBloque(dia, bloqueKey).ramoId) }}
                 </div>
               </div>
             </td>

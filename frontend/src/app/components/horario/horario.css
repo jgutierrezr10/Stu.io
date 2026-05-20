@@ -136,6 +136,42 @@
   font-weight: 600;
   color: #64748b;
   font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.time-cell:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.time-cell .edit-icon {
+  font-size: 0.75rem;
+  opacity: 0;
+  margin-left: 0.25rem;
+  transition: opacity 0.2s ease;
+}
+
+.time-cell:hover .edit-icon {
+  opacity: 1;
+}
+
+.time-input {
+  width: 90%;
+  padding: 0.25rem;
+  border: 1px solid #4f46e5;
+  border-radius: 4px;
+  font-family: inherit;
+  font-weight: 600;
+  color: #0f172a;
+  text-align: center;
+  outline: none;
+}
+
+.time-cell.editing {
+  background: #ffffff;
+  padding: 0;
 }
 
 .drop-cell {
