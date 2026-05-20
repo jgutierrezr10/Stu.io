@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { AuthResponse, LoginRequest, RegisterRequest } from '../models/usuario.model';
+import { AuthResponse, LoginRequest, RegisterRequest, UpdateUserRequest } from '../models/usuario.model';
 
 @Injectable({
   providedIn: 'root'
@@ -28,6 +28,12 @@ export class AuthService {
 
   login(data: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, data).pipe(
+      tap(res => this.guardarSesion(res))
+    );
+  }
+
+  actualizarCuenta(data: UpdateUserRequest): Observable<AuthResponse> {
+    return this.http.put<AuthResponse>(`http://localhost:8080/api/usuarios/cuenta`, data).pipe(
       tap(res => this.guardarSesion(res))
     );
   }

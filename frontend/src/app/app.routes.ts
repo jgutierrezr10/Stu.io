@@ -31,5 +31,17 @@ export const routes: Routes = [
       import('./components/horario/horario').then(m => m.Horario),
     canActivate: [authGuard]
   },
+  {
+    path: 'notas',
+    loadComponent: () =>
+      import('./components/notas/notas.component').then(m => m.NotasComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'calendario',
+    loadComponent: () =>
+      import('./components/calendario/calendario.component').then(m => m.CalendarioComponent),
+    canActivate: [authGuard]
+  },
   { path: '**', redirectTo: 'login' }
 ];

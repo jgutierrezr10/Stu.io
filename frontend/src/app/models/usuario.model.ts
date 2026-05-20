@@ -19,3 +19,10 @@ export interface AuthResponse {
   nombre: string;
   email: string;
 }
+
+export interface UpdateUserRequest {
+  nombre?: string;
+  email?: string;
+  currentPassword?: string;
+  newPassword?: string;
+}

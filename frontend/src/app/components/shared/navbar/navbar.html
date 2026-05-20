@@ -27,18 +27,70 @@
       </button>
     </div>
 
-    <div class="modal-body-center">
-      <div class="cuenta-avatar">
-        <i class="bi bi-person-circle"></i>
-      </div>
-      <p class="cuenta-nombre">{{ nombreUsuario }}</p>
-      <p class="modal-desc">Aquí podrás configurar tus datos personales y preferencias de la aplicación en el futuro.</p>
-    </div>
+    <form (ngSubmit)="actualizarCuenta()">
+      <div class="modal-body">
+        
+        <!-- Mensajes de Estado -->
+        <div class="alert alert-danger" *ngIf="errorMsg">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <span>{{ errorMsg }}</span>
+        </div>
+        <div class="alert alert-success" *ngIf="successMsg">
+          <i class="bi bi-check-circle-fill"></i>
+          <span>{{ successMsg }}</span>
+        </div>
 
-    <div class="modal-acciones">
-      <button class="btn-guardar" (click)="cerrarMiCuenta()">
-        <i class="bi bi-check-lg"></i> Entendido
-      </button>
-    </div>
+        <!-- Nombre -->
+        <div class="form-group">
+          <label for="nombre">Nombre Completo</label>
+          <div class="input-container">
+            <i class="bi bi-person"></i>
+            <input type="text" id="nombre" name="nombre" [(ngModel)]="nombre" required placeholder="Ej: Juan Pérez" />
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="email">Correo Electrónico</label>
+          <div class="input-container">
+            <i class="bi bi-envelope"></i>
+            <input type="email" id="email" name="email" [(ngModel)]="email" required placeholder="Ej: juan@ejemplo.com" />
+          </div>
+        </div>
+
+        <div class="form-divider">
+          <span>Cambiar Contraseña (Opcional)</span>
+        </div>
+
+        <!-- Contraseña Actual -->
+        <div class="form-group">
+          <label for="currentPassword">Contraseña Actual</label>
+          <div class="input-container">
+            <i class="bi bi-shield-lock"></i>
+            <input type="password" id="currentPassword" name="currentPassword" [(ngModel)]="currentPassword" placeholder="Ingresa tu clave actual" />
+          </div>
+          <p class="help-text" *ngIf="newPassword">Obligatoria si deseas definir una nueva contraseña</p>
+        </div>
+
+        <!-- Nueva Contraseña -->
+        <div class="form-group">
+          <label for="newPassword">Nueva Contraseña</label>
+          <div class="input-container">
+            <i class="bi bi-key-fill"></i>
+            <input type="password" id="newPassword" name="newPassword" [(ngModel)]="newPassword" placeholder="Mínimo 6 caracteres" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-acciones">
+        <button type="button" class="btn-cancelar" (click)="cerrarMiCuenta()" [disabled]="guardando">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-guardar" [disabled]="guardando">
+          <i class="bi bi-save-fill" *ngIf="!guardando"></i>
+          <span>{{ guardando ? 'Guardando...' : 'Guardar Cambios' }}</span>
+        </button>
+      </div>
+    </form>
   </div>
 </div>

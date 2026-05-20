@@ -1,0 +1,174 @@
+<div class="notas-page">
+  <app-navbar></app-navbar>
+
+  <main class="notas-container">
+    <!-- Header with Back Button -->
+    <header class="page-header">
+      <div class="header-left">
+        <a routerLink="/dashboard" class="btn-back">
+          <i class="bi bi-arrow-left"></i> Volver al Dashboard
+        </a>
+        <h1>Notas y Promedios 📊</h1>
+        <p>Calcula tus promedios ponderados y gestiona las notas de tus evaluaciones.</p>
+      </div>
+    </header>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label for="semestreSelect">Filtrar por Semestre:</label>
+        <select id="semestreSelect" [(ngModel)]="semestreSeleccionado" class="form-select">
+          <option [ngValue]="0">Todos los Semestres</option>
+          <option *ngFor="let s of [1,2,3,4,5,6,7,8,9,10]" [ngValue]="s">Semestre {{ s }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group toggle-group">
+        <label class="switch-container">
+          <input type="checkbox" [(ngModel)]="soloCursando">
+          <span class="switch-slider"></span>
+        </label>
+        <span>Mostrar solo ramos cursando actualmente</span>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando asignaturas y calificaciones...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && getRamosFiltrados().length === 0" class="empty-state">
+      <i class="bi bi-journal-x"></i>
+      <h3>No se encontraron asignaturas</h3>
+      <p *ngIf="soloCursando">No tienes asignaturas marcadas como <strong>Cursando</strong> en este filtro. Ve a tu malla curricular para marcar ramos como cursando.</p>
+      <p *ngIf="!soloCursando">No has cargado asignaturas en tu avance curricular.</p>
+      <a routerLink="/malla" class="btn-action">Ir a Malla Curricular</a>
+    </div>
+
+    <!-- Ramos Grid -->
+    <div *ngIf="!loading && getRamosFiltrados().length > 0" class="ramos-grid">
+      <div *ngFor="let ramo of getRamosFiltrados()" class="ramo-card">
+        <!-- Ramo Card Header -->
+        <div class="ramo-header">
+          <div class="ramo-info">
+            <span class="semestre-tag">Semestre {{ ramo.semestre }}</span>
+            <h2>{{ ramo.nombre }}</h2>
+          </div>
+          <!-- Average Badge -->
+          <div class="promedio-badge" [ngClass]="{
+            'aprobado': ramo.nota && ramo.nota >= 4.0,
+            'reprobado': ramo.nota && ramo.nota < 4.0,
+            'sin-nota': !ramo.nota
+          }">
+            <span class="lbl">Promedio</span>
+            <span class="val">{{ ramo.nota ? ramo.nota.toFixed(1) : '--' }}</span>
+          </div>
+        </div>
+
+        <!-- Ramo Card Body -->
+        <div class="ramo-body">
+          <!-- Evaluations Table -->
+          <div class="evaluaciones-list">
+            <div class="eval-header-row">
+              <span class="col-name">Evaluación</span>
+              <span class="col-date">Fecha</span>
+              <span class="col-weight">Pond.</span>
+              <span class="col-grade">Nota</span>
+              <span class="col-actions"></span>
+            </div>
+
+            <!-- Existing Evaluations -->
+            <div *ngFor="let ev of evaluacionesPorRamo[ramo.id!]" class="eval-row">
+              <span class="col-name val-name">{{ ev.nombre }}</span>
+              <span class="col-date val-date">{{ ev.fecha ? (ev.fecha | date:'dd/MM/yyyy') : 'Sin fecha' }}</span>
+              <span class="col-weight val-weight">{{ ev.ponderacion }}%</span>
+              <span class="col-grade val-grade">
+                <input 
+                  type="number" 
+                  step="0.1" 
+                  min="1.0" 
+                  max="7.0" 
+                  [ngModel]="ev.nota" 
+                  (ngModelChange)="actualizarNota(ev, $event, ramo.id!)"
+                  placeholder="--"
+                  class="grade-input"
+                >
+              </span>
+              <span class="col-actions val-actions">
+                <button (click)="eliminarEvaluacion(ev.id!, ramo.id!)" class="btn-delete-ev" title="Eliminar evaluación">
+                  <i class="bi bi-trash-fill"></i>
+                </button>
+              </span>
+            </div>
+
+            <!-- No evaluations msg -->
+            <div *ngIf="!evaluacionesPorRamo[ramo.id!] || evaluacionesPorRamo[ramo.id!].length === 0" class="no-evals">
+              No hay evaluaciones registradas aún.
+            </div>
+          </div>
+
+          <!-- Add Evaluation Form -->
+          <div class="add-eval-form">
+            <h3>Añadir Evaluación</h3>
+            <div class="form-row">
+              <input 
+                type="text" 
+                placeholder="Ej: Certamen 1" 
+                [(ngModel)]="nuevaEv[ramo.id!].nombre" 
+                class="form-control"
+              >
+              <input 
+                type="date" 
+                [(ngModel)]="nuevaEv[ramo.id!].fecha" 
+                class="form-control"
+              >
+              <div class="ponderacion-wrapper">
+                <input 
+                  type="number" 
+                  placeholder="%" 
+                  [(ngModel)]="nuevaEv[ramo.id!].ponderacion" 
+                  class="form-control pond-input"
+                  min="1"
+                  max="100"
+                >
+                <span class="percent-sign">%</span>
+              </div>
+              <button (click)="agregarEvaluacion(ramo.id!)" class="btn-add-ev">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+            <div *ngIf="errorMsg[ramo.id!]" class="error-text">
+              <i class="bi bi-exclamation-circle-fill"></i> {{ errorMsg[ramo.id!] }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Ramo Card Footer (Ponderation Sum) -->
+        <div class="ramo-footer">
+          <div class="progress-info">
+            <span>Ponderación Total: <strong>{{ getSumaPonderacion(ramo.id!) }}%</strong> de 100%</span>
+            <div class="progress-bar-bg">
+              <div 
+                class="progress-bar-fill" 
+                [style.width.%]="getSumaPonderacion(ramo.id!)"
+                [ngClass]="{
+                  'complete': getSumaPonderacion(ramo.id!) === 100,
+                  'warning': getSumaPonderacion(ramo.id!) > 100,
+                  'incomplete': getSumaPonderacion(ramo.id!) < 100
+                }"
+              ></div>
+            </div>
+          </div>
+          <span *ngIf="getSumaPonderacion(ramo.id!) < 100" class="weight-tip text-amber">
+            Falta {{ 100 - getSumaPonderacion(ramo.id!) }}% por definir
+          </span>
+          <span *ngIf="getSumaPonderacion(ramo.id!) === 100" class="weight-tip text-emerald">
+            <i class="bi bi-check-circle-fill"></i> Malla completa
+          </span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

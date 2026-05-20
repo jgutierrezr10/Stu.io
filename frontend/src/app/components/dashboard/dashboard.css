@@ -130,6 +130,14 @@
   background: linear-gradient(135deg, #dcfce7 0%, #f3f4f6 100%);
 }
 
+.card-notas .card-bg {
+  background: linear-gradient(135deg, #fef3c7 0%, #f3f4f6 100%);
+}
+
+.card-calendario .card-bg {
+  background: linear-gradient(135deg, #f5f3ff 0%, #f3f4f6 100%);
+}
+
 .dash-card:hover .card-bg {
   opacity: 1;
 }
@@ -154,6 +162,16 @@
 .card-horario .card-icon {
   background: #dcfce7;
   color: #16a34a;
+}
+
+.card-notas .card-icon {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.card-calendario .card-icon {
+  background: #f5f3ff;
+  color: #7c3aed;
 }
 
 .dash-card:hover .card-icon {

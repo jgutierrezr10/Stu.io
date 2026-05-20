@@ -44,4 +44,37 @@ public class UsuarioService {
         String token = jwtService.generateToken(usuario.getEmail());
         return new AuthResponse(token, usuario.getNombre(), usuario.getEmail());
     }
+
+    public AuthResponse actualizarCuenta(UpdateUserRequest request, String currentEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Validar contraseña actual si se quiere cambiar la contraseña o el email
+        if (request.getCurrentPassword() != null && !request.getCurrentPassword().isEmpty()) {
+            if (!passwordEncoder.matches(request.getCurrentPassword(), usuario.getPassword())) {
+                throw new RuntimeException("Contraseña actual incorrecta");
+            }
+            if (request.getNewPassword() != null && !request.getNewPassword().isEmpty()) {
+                usuario.setPassword(passwordEncoder.encode(request.getNewPassword()));
+            }
+        } else if (request.getNewPassword() != null && !request.getNewPassword().isEmpty()) {
+            throw new RuntimeException("Debe ingresar su contraseña actual para establecer una nueva");
+        }
+
+        if (request.getNombre() != null && !request.getNombre().isEmpty()) {
+            usuario.setNombre(request.getNombre());
+        }
+
+        if (request.getEmail() != null && !request.getEmail().isEmpty() && !request.getEmail().equalsIgnoreCase(currentEmail)) {
+            if (usuarioRepository.existsByEmail(request.getEmail())) {
+                throw new RuntimeException("El nuevo email ya está registrado");
+            }
+            usuario.setEmail(request.getEmail());
+        }
+
+        usuarioRepository.save(usuario);
+
+        String nuevoToken = jwtService.generateToken(usuario.getEmail());
+        return new AuthResponse(nuevoToken, usuario.getNombre(), usuario.getEmail());
+    }
 }

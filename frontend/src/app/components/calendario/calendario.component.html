@@ -1,0 +1,166 @@
+<div class="cal-page">
+  <app-navbar></app-navbar>
+
+  <main class="cal-container">
+    <!-- Header with Back Button -->
+    <header class="page-header">
+      <div class="header-left">
+        <a routerLink="/dashboard" class="btn-back">
+          <i class="bi bi-arrow-left"></i> Volver al Dashboard
+        </a>
+        <h1>Calendario de Evaluaciones 📅</h1>
+        <p>Controla tus certámenes, laboratorios y entregas programadas.</p>
+      </div>
+    </header>
+
+    <!-- Stats Row -->
+    <div class="stats-row" *ngIf="!loading">
+      <div class="stat-card upcoming">
+        <div class="stat-icon">
+          <i class="bi bi-calendar-check-fill"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ getUpcomingCount() }}</h3>
+          <p>Evaluaciones Próximas</p>
+        </div>
+      </div>
+
+      <div class="stat-card unscheduled" [ngClass]="{'has-warn': getUnscheduledCount() > 0}">
+        <div class="stat-icon">
+          <i class="bi bi-calendar-plus-fill"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ getUnscheduledCount() }}</h3>
+          <p>Evaluaciones sin Fecha</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Tab Bar -->
+    <div class="filter-tab-bar" *ngIf="!loading">
+      <!-- Course Selector -->
+      <div class="filter-group">
+        <label for="ramoSelect">Asignatura:</label>
+        <select id="ramoSelect" [(ngModel)]="ramoSeleccionado" class="form-select">
+          <option [ngValue]="0">Todos los Ramos</option>
+          <option *ngFor="let r of ramos" [ngValue]="r.id">{{ r.nombre }}</option>
+        </select>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs-group">
+        <button 
+          (click)="filtroTemporal = 'proximas'" 
+          class="tab-btn" 
+          [ngClass]="{'active': filtroTemporal === 'proximas'}"
+        >
+          Próximas
+        </button>
+        <button 
+          (click)="filtroTemporal = 'pasadas'" 
+          class="tab-btn" 
+          [ngClass]="{'active': filtroTemporal === 'pasadas'}"
+        >
+          Historial
+        </button>
+        <button 
+          (click)="filtroTemporal = 'sin_fecha'" 
+          class="tab-btn" 
+          [ngClass]="{'active': filtroTemporal === 'sin_fecha'}"
+        >
+          Sin fecha
+        </button>
+        <button 
+          (click)="filtroTemporal = 'todas'" 
+          class="tab-btn" 
+          [ngClass]="{'active': filtroTemporal === 'todas'}"
+        >
+          Todas
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando calendario académico...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && getEvaluacionesFiltradas().length === 0" class="empty-state">
+      <i class="bi bi-calendar-x"></i>
+      <h3>No hay evaluaciones programadas</h3>
+      <p *ngIf="filtroTemporal === 'proximas'">No tienes evaluaciones programadas para fechas futuras. ¡Buen trabajo!</p>
+      <p *ngIf="filtroTemporal === 'pasadas'">No se registran evaluaciones en el historial.</p>
+      <p *ngIf="filtroTemporal === 'sin_fecha'">¡Excelente! Todas tus evaluaciones tienen fecha asignada.</p>
+      <p *ngIf="filtroTemporal === 'todas'">No se registran evaluaciones creadas. Agrégalas en el módulo de Notas.</p>
+      <a routerLink="/notas" class="btn-action">Gestionar Notas y Evaluaciones</a>
+    </div>
+
+    <!-- Timeline List -->
+    <div *ngIf="!loading && getEvaluacionesFiltradas().length > 0" class="timeline-list">
+      <div *ngFor="let ev of getEvaluacionesFiltradas()" class="timeline-item" [ngClass]="{
+        'past-item': ev.fecha && ev.fecha < todayStr,
+        'upcoming-item': ev.fecha && ev.fecha >= todayStr,
+        'no-date-item': !ev.fecha
+      }">
+        <!-- Date Badge -->
+        <div class="date-badge-container">
+          <div class="date-badge" *ngIf="ev.fecha">
+            <span class="day">{{ ev.fecha | date:'dd' }}</span>
+            <span class="month">{{ ev.fecha | date:'MMM' | uppercase }}</span>
+          </div>
+          <div class="date-badge no-date" *ngIf="!ev.fecha">
+            <i class="bi bi-calendar-plus"></i>
+          </div>
+        </div>
+
+        <!-- Timeline Info -->
+        <div class="item-content">
+          <span class="ramo-name-lbl">{{ ev.ramoNombre }}</span>
+          <h2>{{ ev.nombre }}</h2>
+          <div class="meta-row">
+            <span class="meta-item"><i class="bi bi-percent"></i> Ponderación: {{ ev.ponderacion }}%</span>
+            <span class="meta-item" *ngIf="ev.fecha"><i class="bi bi-calendar3"></i> {{ ev.fecha | date:'fullDate' }}</span>
+            <span class="meta-item text-amber" *ngIf="!ev.fecha"><i class="bi bi-exclamation-triangle"></i> Sin fecha asignada</span>
+          </div>
+        </div>
+
+        <!-- Grade / Actions Section -->
+        <div class="item-actions">
+          <!-- Grade status badge -->
+          <div class="grade-badge" *ngIf="ev.nota" [ngClass]="{'aprobado': ev.nota >= 4.0, 'reprobado': ev.nota < 4.0}">
+            Nota: {{ ev.nota.toFixed(1) }}
+          </div>
+          <div class="grade-badge pendiente" *ngIf="!ev.nota">
+            Pendiente
+          </div>
+
+          <!-- Date Quick Edit -->
+          <div class="date-edit-wrapper" *ngIf="editandoEvId === ev.id">
+            <input type="date" [(ngModel)]="fechaEdicion" class="form-control-inline">
+            <div class="edit-actions">
+              <button (click)="guardarFechaEdicion(ev)" class="btn-save-inline" title="Guardar fecha">
+                <i class="bi bi-check-lg"></i>
+              </button>
+              <button (click)="cancelarEdicion()" class="btn-cancel-inline" title="Cancelar">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Edit button -->
+          <button 
+            *ngIf="editandoEvId !== ev.id" 
+            (click)="iniciarEdicionFecha(ev)" 
+            class="btn-edit-date" 
+            [title]="ev.fecha ? 'Cambiar fecha' : 'Asignar fecha'"
+          >
+            <i class="bi bi-calendar-event"></i>
+            <span>{{ ev.fecha ? 'Reprogramar' : 'Asignar fecha' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

@@ -1,0 +1,25 @@
+package com.example.avance.controller;
+
+import com.example.avance.dto.AuthResponse;
+import com.example.avance.dto.UpdateUserRequest;
+import com.example.avance.service.UsuarioService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+
+@RestController
+@RequestMapping("/api/usuarios")
+@RequiredArgsConstructor
+public class UsuarioController {
+
+    private final UsuarioService usuarioService;
+
+    @PutMapping("/cuenta")
+    public ResponseEntity<AuthResponse> actualizarCuenta(
+            @RequestBody UpdateUserRequest request,
+            Principal principal) {
+        return ResponseEntity.ok(usuarioService.actualizarCuenta(request, principal.getName()));
+    }
+}
