@@ -8,6 +8,14 @@ import { EvaluacionService } from '../../services/evaluacion.service';
 import { Ramo } from '../../models/ramo.model';
 import { Evaluacion } from '../../models/evaluacion.model';
 
+interface CalendarDay {
+  date: Date;
+  dayNumber: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  evaluaciones: Evaluacion[];
+}
+
 @Component({
   selector: 'app-calendario',
   standalone: true,
@@ -19,41 +27,54 @@ export class CalendarioComponent implements OnInit {
   ramos: Ramo[] = [];
   evaluaciones: Evaluacion[] = [];
 
-  // Filtros
-  ramoSeleccionado: number = 0; // 0 significa "Todos"
-  filtroTemporal: 'todas' | 'proximas' | 'pasadas' | 'sin_fecha' = 'proximas';
+  // Calendar state
+  currentDate = new Date();
+  currentMonth = new Date().getMonth();
+  currentYear = new Date().getFullYear();
+  calendarDays: CalendarDay[] = [];
+  weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
 
-  // Edición rápida de fecha
-  editandoEvId: number | null = null;
-  fechaEdicion: string = '';
+  // Selected day modal
+  selectedDay: CalendarDay | null = null;
+  mostrarModal = false;
+
+  // New evaluation form
+  nuevaEv: Partial<Evaluacion> = {};
+  errorMsg = '';
+  guardando = false;
 
   loading = true;
-  todayStr = '';
 
   constructor(
     private ramoService: RamoService,
     private evaluacionService: EvaluacionService
-  ) {
-    // Obtener hoy en formato YYYY-MM-DD en hora local
-    const hoy = new Date();
-    const tzOffset = hoy.getTimezoneOffset() * 60000; // offset en ms
-    this.todayStr = (new Date(hoy.getTime() - tzOffset)).toISOString().split('T')[0];
-  }
+  ) {}
 
   ngOnInit() {
+    // Build calendar immediately so it always shows
+    this.buildCalendar();
+    this.loading = false;
+    // Then load data in background
     this.cargarDatos();
   }
 
   cargarDatos() {
-    this.loading = true;
     this.ramoService.getRamos().subscribe({
       next: (ramos) => {
         this.ramos = ramos;
+        // Pre-select first ramo in form
+        if (ramos.length > 0) {
+          this.nuevaEv.ramoId = ramos[0].id;
+        }
         this.cargarEvaluaciones();
       },
       error: (err) => {
         console.error('Error al cargar ramos', err);
-        this.loading = false;
+        // Calendar already showing, just ignore
       }
     });
   }
@@ -62,78 +83,184 @@ export class CalendarioComponent implements OnInit {
     this.evaluacionService.getEvaluaciones().subscribe({
       next: (evs) => {
         this.evaluaciones = evs;
-        this.loading = false;
+        this.buildCalendar();
+        // Refresh modal if open
+        if (this.selectedDay) {
+          const dateStr = this.toDateStr(this.selectedDay.date);
+          const refreshed = this.calendarDays.find(d => this.toDateStr(d.date) === dateStr);
+          if (refreshed) this.selectedDay = refreshed;
+        }
       },
       error: (err) => {
         console.error('Error al cargar evaluaciones', err);
-        this.loading = false;
+        // Calendar already showing, just no events loaded
       }
     });
   }
 
-  getEvaluacionesFiltradas(): Evaluacion[] {
-    let filtradas = this.evaluaciones;
+  buildCalendar() {
+    const days: CalendarDay[] = [];
+    const firstDay = new Date(this.currentYear, this.currentMonth, 1);
+    const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
+    const today = new Date();
 
-    // Filtro por ramo
-    if (this.ramoSeleccionado !== 0) {
-      filtradas = filtradas.filter(ev => ev.ramoId === this.ramoSeleccionado);
+    // Day of week for first day (0=Sun, make it Mon-based: 1=Mon...0=Sun->6)
+    let startDow = firstDay.getDay(); // 0=Sun
+    startDow = startDow === 0 ? 6 : startDow - 1; // convert to Mon=0 ... Sun=6
+
+    // Fill leading days from previous month
+    for (let i = startDow - 1; i >= 0; i--) {
+      const d = new Date(this.currentYear, this.currentMonth, -i);
+      days.push(this.createDay(d, false, today));
     }
 
-    // Filtro por fecha (próximas, pasadas, sin fecha)
-    if (this.filtroTemporal === 'proximas') {
-      filtradas = filtradas.filter(ev => ev.fecha && ev.fecha >= this.todayStr);
-      // Ordenar por fecha ascendente (lo más cercano primero)
-      filtradas.sort((a, b) => (a.fecha! > b.fecha! ? 1 : -1));
-    } else if (this.filtroTemporal === 'pasadas') {
-      filtradas = filtradas.filter(ev => ev.fecha && ev.fecha < this.todayStr);
-      // Ordenar por fecha descendente (lo más reciente primero)
-      filtradas.sort((a, b) => (a.fecha! < b.fecha! ? 1 : -1));
-    } else if (this.filtroTemporal === 'sin_fecha') {
-      filtradas = filtradas.filter(ev => !ev.fecha);
+    // Fill current month days
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(this.currentYear, this.currentMonth, d);
+      days.push(this.createDay(date, true, today));
+    }
+
+    // Fill trailing days to complete weeks
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      const d = new Date(this.currentYear, this.currentMonth + 1, i);
+      days.push(this.createDay(d, false, today));
+    }
+
+    this.calendarDays = days;
+
+    // If modal is open for a day, refresh it
+    if (this.selectedDay) {
+      const dateStr = this.toDateStr(this.selectedDay.date);
+      const refreshed = days.find(d => this.toDateStr(d.date) === dateStr);
+      if (refreshed) this.selectedDay = refreshed;
+    }
+  }
+
+  createDay(date: Date, isCurrentMonth: boolean, today: Date): CalendarDay {
+    const dateStr = this.toDateStr(date);
+    const evsDia = this.evaluaciones.filter(ev => ev.fecha === dateStr);
+    return {
+      date,
+      dayNumber: date.getDate(),
+      isCurrentMonth,
+      isToday: this.toDateStr(date) === this.toDateStr(today),
+      evaluaciones: evsDia
+    };
+  }
+
+  toDateStr(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  prevMonth() {
+    if (this.currentMonth === 0) {
+      this.currentMonth = 11;
+      this.currentYear--;
     } else {
-      // Todas. Ordenar por fecha (con nulos al final)
-      filtradas.sort((a, b) => {
-        if (!a.fecha) return 1;
-        if (!b.fecha) return -1;
-        return a.fecha > b.fecha ? 1 : -1;
+      this.currentMonth--;
+    }
+    this.buildCalendar();
+  }
+
+  nextMonth() {
+    if (this.currentMonth === 11) {
+      this.currentMonth = 0;
+      this.currentYear++;
+    } else {
+      this.currentMonth++;
+    }
+    this.buildCalendar();
+  }
+
+  goToToday() {
+    this.currentMonth = new Date().getMonth();
+    this.currentYear = new Date().getFullYear();
+    this.buildCalendar();
+  }
+
+  clickDay(day: CalendarDay) {
+    this.selectedDay = day;
+    this.mostrarModal = true;
+    this.errorMsg = '';
+    this.resetForm(day);
+  }
+
+  resetForm(day: CalendarDay) {
+    this.nuevaEv = {
+      nombre: '',
+      ponderacion: 20,
+      nota: undefined,
+      fecha: this.toDateStr(day.date),
+      ramoId: this.ramos.length > 0 ? this.ramos[0].id : undefined
+    };
+  }
+
+  cerrarModal() {
+    this.mostrarModal = false;
+    this.selectedDay = null;
+    this.errorMsg = '';
+  }
+
+  guardarEvaluacion() {
+    this.errorMsg = '';
+    if (!this.nuevaEv.nombre || this.nuevaEv.nombre.trim() === '') {
+      this.errorMsg = 'El nombre de la evaluación es requerido.';
+      return;
+    }
+    if (!this.nuevaEv.ramoId) {
+      this.errorMsg = 'Debes seleccionar un ramo.';
+      return;
+    }
+    if (!this.nuevaEv.ponderacion || this.nuevaEv.ponderacion <= 0 || this.nuevaEv.ponderacion > 100) {
+      this.errorMsg = 'La ponderación debe estar entre 1% y 100%.';
+      return;
+    }
+
+    this.guardando = true;
+    const ev: Evaluacion = {
+      nombre: this.nuevaEv.nombre,
+      ponderacion: this.nuevaEv.ponderacion,
+      nota: this.nuevaEv.nota || undefined,
+      fecha: this.nuevaEv.fecha,
+      ramoId: this.nuevaEv.ramoId!
+    };
+
+    this.evaluacionService.crearEvaluacion(ev).subscribe({
+      next: () => {
+        this.guardando = false;
+        this.cargarEvaluaciones();
+        // Re-open selected day after reload (handled in buildCalendar)
+      },
+      error: () => {
+        this.guardando = false;
+        this.errorMsg = 'Error al guardar la evaluación.';
+      }
+    });
+  }
+
+  eliminarEvaluacion(evId: number) {
+    if (confirm('¿Eliminar esta evaluación?')) {
+      this.evaluacionService.eliminarEvaluacion(evId).subscribe({
+        next: () => { this.cargarEvaluaciones(); },
+        error: () => { this.errorMsg = 'Error al eliminar.'; }
       });
     }
-
-    return filtradas;
   }
 
-  iniciarEdicionFecha(ev: Evaluacion) {
-    if (ev.id) {
-      this.editandoEvId = ev.id;
-      this.fechaEdicion = ev.fecha || '';
-    }
+  getRamoNombre(ramoId: number): string {
+    return this.ramos.find(r => r.id === ramoId)?.nombre || 'Ramo';
   }
 
-  guardarFechaEdicion(ev: Evaluacion) {
-    const updatedEv = { ...ev, fecha: this.fechaEdicion || undefined };
-    if (ev.id) {
-      this.evaluacionService.actualizarEvaluacion(ev.id, updatedEv).subscribe({
-        next: () => {
-          this.editandoEvId = null;
-          this.cargarEvaluaciones();
-        },
-        error: (err) => {
-          console.error('Error al actualizar fecha', err);
-          alert('No se pudo guardar la fecha. Inténtalo de nuevo.');
-        }
-      });
-    }
+  get monthLabel(): string {
+    return `${this.monthNames[this.currentMonth]} ${this.currentYear}`;
   }
 
-  cancelarEdicion() {
-    this.editandoEvId = null;
-  }
-
-  getUpcomingCount(): number {
-    return this.evaluaciones.filter(ev => ev.fecha && ev.fecha >= this.todayStr).length;
-  }
-
-  getUnscheduledCount(): number {
-    return this.evaluaciones.filter(ev => !ev.fecha).length;
+  getColorClass(index: number): string {
+    const classes = ['ev-indigo', 'ev-emerald', 'ev-amber', 'ev-rose', 'ev-violet'];
+    return classes[index % classes.length];
   }
 }

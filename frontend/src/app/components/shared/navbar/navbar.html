@@ -1,7 +1,7 @@
 <nav class="navbar">
   <a routerLink="/dashboard" class="nav-brand">
     <i class="bi bi-mortarboard-fill"></i>
-    <span>Avance Curricular</span>
+    <span>Stu.io</span>
   </a>
   <div class="nav-user">
     <div class="user-info">
@@ -29,7 +29,7 @@
 
     <form (ngSubmit)="actualizarCuenta()">
       <div class="modal-body">
-        
+
         <!-- Mensajes de Estado -->
         <div class="alert alert-danger" *ngIf="errorMsg">
           <i class="bi bi-exclamation-triangle-fill"></i>
@@ -54,7 +54,8 @@
           <label for="email">Correo Electrónico</label>
           <div class="input-container">
             <i class="bi bi-envelope"></i>
-            <input type="email" id="email" name="email" [(ngModel)]="email" required placeholder="Ej: juan@ejemplo.com" />
+            <input type="email" id="email" name="email" [(ngModel)]="email" required
+              placeholder="Ej: juan@ejemplo.com" />
           </div>
         </div>
 
@@ -67,7 +68,8 @@
           <label for="currentPassword">Contraseña Actual</label>
           <div class="input-container">
             <i class="bi bi-shield-lock"></i>
-            <input type="password" id="currentPassword" name="currentPassword" [(ngModel)]="currentPassword" placeholder="Ingresa tu clave actual" />
+            <input type="password" id="currentPassword" name="currentPassword" [(ngModel)]="currentPassword"
+              placeholder="Ingresa tu clave actual" />
           </div>
           <p class="help-text" *ngIf="newPassword">Obligatoria si deseas definir una nueva contraseña</p>
         </div>
@@ -77,7 +79,8 @@
           <label for="newPassword">Nueva Contraseña</label>
           <div class="input-container">
             <i class="bi bi-key-fill"></i>
-            <input type="password" id="newPassword" name="newPassword" [(ngModel)]="newPassword" placeholder="Mínimo 6 caracteres" />
+            <input type="password" id="newPassword" name="newPassword" [(ngModel)]="newPassword"
+              placeholder="Mínimo 6 caracteres" />
           </div>
         </div>
       </div>
