@@ -39,22 +39,34 @@ public class BloqueHorarioService {
         bloqueHorarioRepository.deleteByUsuarioId(usuario.getId());
         
         List<BloqueHorario> nuevosBloques = bloques.stream()
-                .filter(dto -> dto.getRamoId() != null) // Solo guardamos los bloques que tienen un ramo asignado
+                .filter(dto -> dto.getRamoId() != null || dto.getRamo2Id() != null || 
+                              (dto.getDetalle1() != null && !dto.getDetalle1().isEmpty()) || 
+                              (dto.getDetalle2() != null && !dto.getDetalle2().isEmpty()))
                 .map(dto -> {
                     BloqueHorario bh = new BloqueHorario();
                     bh.setUsuario(usuario);
                     bh.setDia(dto.getDia());
                     bh.setHora(dto.getHora());
+                    bh.setDetalle1(dto.getDetalle1());
+                    bh.setDetalle2(dto.getDetalle2());
                     
-                    Ramo ramo = ramoRepository.findById(dto.getRamoId())
-                            .orElseThrow(() -> new RuntimeException("Ramo no encontrado"));
-                    
-                    // Verificar que el ramo pertenezca al usuario
-                    if (!ramo.getUsuario().getId().equals(usuario.getId())) {
-                        throw new RuntimeException("Acceso denegado al ramo");
+                    if (dto.getRamoId() != null) {
+                        Ramo ramo = ramoRepository.findById(dto.getRamoId())
+                                .orElseThrow(() -> new RuntimeException("Ramo 1 no encontrado"));
+                        if (!ramo.getUsuario().getId().equals(usuario.getId())) {
+                            throw new RuntimeException("Acceso denegado al ramo 1");
+                        }
+                        bh.setRamo(ramo);
                     }
                     
-                    bh.setRamo(ramo);
+                    if (dto.getRamo2Id() != null) {
+                        Ramo ramo2 = ramoRepository.findById(dto.getRamo2Id())
+                                .orElseThrow(() -> new RuntimeException("Ramo 2 no encontrado"));
+                        if (!ramo2.getUsuario().getId().equals(usuario.getId())) {
+                            throw new RuntimeException("Acceso denegado al ramo 2");
+                        }
+                        bh.setRamo2(ramo2);
+                    }
                     return bh;
                 })
                 .collect(Collectors.toList());
@@ -72,10 +84,13 @@ public class BloqueHorarioService {
 
     private BloqueHorarioDTO mapToDTO(BloqueHorario bh) {
         BloqueHorarioDTO dto = new BloqueHorarioDTO();
-        dto.setId(bh.getDia() + "-" + bh.getHora()); // Para el frontend
+        dto.setId(bh.getDia() + "-" + bh.getHora()); 
         dto.setDia(bh.getDia());
         dto.setHora(bh.getHora());
+        dto.setDetalle1(bh.getDetalle1());
+        dto.setDetalle2(bh.getDetalle2());
         dto.setRamoId(bh.getRamo() != null ? bh.getRamo().getId() : null);
+        dto.setRamo2Id(bh.getRamo2() != null ? bh.getRamo2().getId() : null);
         return dto;
     }
 }

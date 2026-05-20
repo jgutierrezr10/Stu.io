@@ -1,0 +1,44 @@
+<nav class="navbar">
+  <a routerLink="/dashboard" class="nav-brand">
+    <i class="bi bi-mortarboard-fill"></i>
+    <span>Avance Curricular</span>
+  </a>
+  <div class="nav-user">
+    <div class="user-info">
+      <i class="bi bi-person-circle"></i>
+      <span>{{ nombreUsuario }}</span>
+    </div>
+    <button class="btn-cuenta" (click)="abrirMiCuenta()">
+      <i class="bi bi-gear-fill"></i> Mi Cuenta
+    </button>
+    <button class="btn-logout" (click)="logout()">
+      <i class="bi bi-box-arrow-right"></i> Salir
+    </button>
+  </div>
+</nav>
+
+<!-- Modal "Mi Cuenta" -->
+<div class="overlay" *ngIf="mostrarModalCuenta" (click)="cerrarMiCuenta()">
+  <div class="modal modal-pequeno" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="bi bi-gear-fill"></i> Configurar Mi Cuenta</h3>
+      <button class="modal-close" (click)="cerrarMiCuenta()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="modal-body-center">
+      <div class="cuenta-avatar">
+        <i class="bi bi-person-circle"></i>
+      </div>
+      <p class="cuenta-nombre">{{ nombreUsuario }}</p>
+      <p class="modal-desc">Aquí podrás configurar tus datos personales y preferencias de la aplicación en el futuro.</p>
+    </div>
+
+    <div class="modal-acciones">
+      <button class="btn-guardar" (click)="cerrarMiCuenta()">
+        <i class="bi bi-check-lg"></i> Entendido
+      </button>
+    </div>
+  </div>
+</div>

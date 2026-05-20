@@ -5,17 +5,19 @@ import { FormsModule } from '@angular/forms';
 import { RamoService } from '../../services/ramo.service';
 import { HorarioService, BloqueHorarioDTO } from '../../services/horario.service';
 import { Ramo } from '../../models/ramo.model';
+import { Navbar } from '../shared/navbar/navbar';
 
 @Component({
   selector: 'app-horario',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, Navbar],
   templateUrl: './horario.html',
   styleUrl: './horario.css'
 })
 export class Horario implements OnInit {
   ramosCursando: Ramo[] = [];
   guardando = false;
+  cargandoHorario = true;
 
   dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -80,7 +82,10 @@ export class Horario implements OnInit {
           id: `${dia}-${hora}`,
           dia,
           hora,
-          ramoId: null
+          ramoId: null,
+          ramo2Id: null,
+          detalle1: '',
+          detalle2: ''
         });
       }
     }
@@ -93,13 +98,26 @@ export class Horario implements OnInit {
   }
 
   getBloque(dia: string, hora: string): BloqueHorarioDTO {
-    return this.grilla.find(b => b.dia === dia && b.hora === hora) || { id: '', dia, hora, ramoId: null };
+    return this.grilla.find(b => b.dia === dia && b.hora === hora) || 
+      { id: '', dia, hora, ramoId: null, ramo2Id: null, detalle1: '', detalle2: '' };
   }
 
-  asignarRamo(bloque: BloqueHorarioDTO, event: Event) {
+  asignarRamo(bloque: BloqueHorarioDTO, event: Event, isSegundoRamo: boolean = false) {
     const select = event.target as HTMLSelectElement;
     const value = select.value;
-    bloque.ramoId = value ? Number(value) : null;
+    const id = value && value !== 'null' ? Number(value) : null;
+    
+    if (isSegundoRamo) {
+      bloque.ramo2Id = id;
+    } else {
+      bloque.ramoId = id;
+      // Si elimina el primer ramo, y hay un segundo, los subimos? 
+      // Por simplicidad, si quita el primero, se queda null y el segundo sigue.
+    }
+    this.guardarHorarioEnAPI();
+  }
+
+  actualizarDetalle(bloque: BloqueHorarioDTO) {
     this.guardarHorarioEnAPI();
   }
 
@@ -110,14 +128,23 @@ export class Horario implements OnInit {
   }
 
   cargarHorarioDesdeAPI() {
-    this.horarioService.obtenerHorario().subscribe(bloques => {
-      this.grilla = this.grilla.map(b => {
-        const dbBloque = bloques.find(db => db.dia === b.dia && db.hora === b.hora);
-        if (dbBloque) {
-          b.ramoId = dbBloque.ramoId;
-        }
-        return b;
-      });
+    this.horarioService.obtenerHorario().subscribe({
+      next: (bloques) => {
+        this.grilla = this.grilla.map(b => {
+          const dbBloque = bloques.find(db => db.dia === b.dia && db.hora === b.hora);
+          if (dbBloque) {
+            b.ramoId = dbBloque.ramoId;
+            b.ramo2Id = dbBloque.ramo2Id;
+            b.detalle1 = dbBloque.detalle1 || '';
+            b.detalle2 = dbBloque.detalle2 || '';
+          }
+          return b;
+        });
+        this.cargandoHorario = false;
+      },
+      error: () => {
+        this.cargandoHorario = false;
+      }
     });
   }
 

@@ -25,4 +25,14 @@ public class BloqueHorario {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "ramo_id")
     private Ramo ramo;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "ramo2_id")
+    private Ramo ramo2;
+
+    @Column(name = "detalle1", length = 50)
+    private String detalle1;
+
+    @Column(name = "detalle2", length = 50)
+    private String detalle2;
 }

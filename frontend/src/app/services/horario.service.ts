@@ -7,6 +7,9 @@ export interface BloqueHorarioDTO {
   dia: string;
   hora: string;
   ramoId: number | null;
+  ramo2Id?: number | null;
+  detalle1?: string;
+  detalle2?: string;
 }
 
 @Injectable({

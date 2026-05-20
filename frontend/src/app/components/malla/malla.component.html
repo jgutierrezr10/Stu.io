@@ -1,19 +1,21 @@
 <div class="layout">
 
-  <!-- Header -->
-  <header>
-    <div class="header-left">
-      <div class="header-brand">
-        <div class="header-brand-icon">
-          <i class="bi bi-mortarboard-fill"></i>
-        </div>
-        <div>
-          <h1>Avance Curricular</h1>
-          <span class="saludo">Hola, {{ nombreUsuario }}</span>
-        </div>
+  <!-- Header Global -->
+  <app-navbar></app-navbar>
+
+  <!-- Barra Secundaria de Acciones -->
+  <div class="malla-top-bar">
+    <div class="top-bar-left">
+      <a routerLink="/dashboard" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Volver al Dashboard
+      </a>
+      <div class="page-title">
+        <i class="bi bi-grid-3x3-gap-fill"></i>
+        <h1>Malla Curricular</h1>
       </div>
     </div>
-    <div class="header-right">
+
+    <div class="top-bar-right">
       <button class="btn-highlight" (click)="abrirModalMalla()">
         <i class="bi bi-grid-3x3-gap-fill"></i> Malla predeterminada
       </button>
@@ -29,11 +31,8 @@
       <button class="btn-primary" (click)="abrirFormulario()">
         <i class="bi bi-plus-lg"></i> Agregar ramo
       </button>
-      <button class="btn-logout" (click)="logout()">
-        <i class="bi bi-box-arrow-right"></i> Salir
-      </button>
     </div>
-  </header>
+  </div>
 
   <!-- Barra de progreso -->
   <div class="progreso-card">

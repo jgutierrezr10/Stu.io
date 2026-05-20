@@ -1,17 +1,19 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { RamoService } from '../../services/ramo.service';
 import { Ramo } from '../../models/ramo.model';
 import { AprobadosPipe } from '../../pipes/aprobados.pipe';
 import { MALLAS_PREDETERMINADAS, MallaPredeterminada } from '../../data/mallas-predeterminadas';
 import { forkJoin } from 'rxjs';
+import { Navbar } from '../shared/navbar/navbar';
 
 @Component({
   selector: 'app-malla',
   standalone: true,
-  imports: [CommonModule, FormsModule, AprobadosPipe],
+  imports: [CommonModule, FormsModule, AprobadosPipe, Navbar, RouterLink],
   templateUrl: './malla.component.html',
   styleUrl: './malla.component.css'
 })
@@ -19,7 +21,6 @@ export class MallaComponent implements OnInit {
 
   ramos: Ramo[] = [];
   porcentaje = 0;
-  nombreUsuario = '';
   semestres: number[] = [];
 
   // Modal individual
@@ -58,7 +59,6 @@ export class MallaComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.nombreUsuario = this.authService.getUsuario()?.nombre ?? '';
     this.cargarRamos();
   }
 
@@ -347,7 +347,4 @@ export class MallaComponent implements OnInit {
     });
   }
 
-  logout() {
-    this.authService.logout();
-  }
 }

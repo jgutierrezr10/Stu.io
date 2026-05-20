@@ -1,4 +1,5 @@
 <div class="horario-page">
+  <app-navbar></app-navbar>
   <div class="top-bar">
     <a routerLink="/dashboard" class="btn-back">
       <i class="bi bi-arrow-left"></i> Volver al Dashboard
@@ -18,11 +19,23 @@
       <span>No tienes ramos marcados como "Cursando" en tu Malla. Ve a tu malla y marca los ramos que estás tomando actualmente para poder armar tu horario.</span>
     </div>
 
-    <div class="grid-wrapper">
-      <table class="horario-table">
+    <div class="grid-container">
+      <!-- Skeleton Loading -->
+      <div class="skeleton-container" *ngIf="cargandoHorario">
+        <div class="skeleton-header">
+          <div class="skeleton-col" *ngFor="let dia of dias"></div>
+        </div>
+        <div class="skeleton-row" *ngFor="let key of bloquesKeys">
+          <div class="skeleton-time"></div>
+          <div class="skeleton-cell" *ngFor="let dia of dias"></div>
+        </div>
+      </div>
+
+      <!-- Tabla Real -->
+      <table class="horario-table" *ngIf="!cargandoHorario">
         <thead>
           <tr>
-            <th class="time-col">Hora / Día</th>
+            <th class="time-header"><i class="bi bi-clock-history"></i> Hora</th>
             <th *ngFor="let dia of dias">{{ dia }}</th>
           </tr>
         </thead>
@@ -49,19 +62,53 @@
             </td>
 
             <td *ngFor="let dia of dias" class="drop-cell">
-              <div class="cell-content" [class.has-ramo]="getBloque(dia, bloqueKey).ramoId !== null">
-                <select 
-                  class="ramo-select" 
-                  [ngModel]="getBloque(dia, bloqueKey).ramoId" 
-                  (change)="asignarRamo(getBloque(dia, bloqueKey), $event)">
-                  <option [ngValue]="null">---</option>
-                  <option *ngFor="let ramo of ramosCursando" [value]="ramo.id">
-                    {{ ramo.nombre }}
-                  </option>
-                </select>
-                <div class="ramo-display" *ngIf="getBloque(dia, bloqueKey).ramoId">
-                  {{ getRamoNombre(getBloque(dia, bloqueKey).ramoId) }}
+              <div class="cell-wrapper" [class.has-content]="getBloque(dia, bloqueKey).ramoId || getBloque(dia, bloqueKey).ramo2Id">
+                
+                <!-- Ramo 1 -->
+                <div class="ramo-slot" [class.filled]="getBloque(dia, bloqueKey).ramoId">
+                  <select class="ramo-select-visible" 
+                          [ngModel]="getBloque(dia, bloqueKey).ramoId" 
+                          (change)="asignarRamo(getBloque(dia, bloqueKey), $event, false)"
+                          [class.empty-select]="!getBloque(dia, bloqueKey).ramoId">
+                    <option [ngValue]="null">---</option>
+                    <option *ngFor="let ramo of ramosCursando" [value]="ramo.id">
+                      {{ ramo.nombre }}
+                    </option>
+                  </select>
+                  
+                  <input *ngIf="getBloque(dia, bloqueKey).ramoId"
+                         type="text" 
+                         class="detalle-input" 
+                         [(ngModel)]="getBloque(dia, bloqueKey).detalle1"
+                         (blur)="actualizarDetalle(getBloque(dia, bloqueKey))"
+                         (keyup.enter)="actualizarDetalle(getBloque(dia, bloqueKey))"
+                         placeholder="Detalle (Ej: LAB)" />
                 </div>
+
+                <!-- Ramo 2 -->
+                <div class="ramo-slot slot-2" 
+                     *ngIf="getBloque(dia, bloqueKey).ramoId || getBloque(dia, bloqueKey).ramo2Id" 
+                     [class.filled]="getBloque(dia, bloqueKey).ramo2Id">
+                  
+                  <select class="ramo-select-visible" 
+                          [ngModel]="getBloque(dia, bloqueKey).ramo2Id" 
+                          (change)="asignarRamo(getBloque(dia, bloqueKey), $event, true)"
+                          [class.empty-select]="!getBloque(dia, bloqueKey).ramo2Id">
+                    <option [ngValue]="null">+ Añadir tope horario</option>
+                    <option *ngFor="let ramo of ramosCursando" [value]="ramo.id">
+                      {{ ramo.nombre }}
+                    </option>
+                  </select>
+
+                  <input *ngIf="getBloque(dia, bloqueKey).ramo2Id"
+                         type="text" 
+                         class="detalle-input" 
+                         [(ngModel)]="getBloque(dia, bloqueKey).detalle2"
+                         (blur)="actualizarDetalle(getBloque(dia, bloqueKey))"
+                         (keyup.enter)="actualizarDetalle(getBloque(dia, bloqueKey))"
+                         placeholder="Detalle (Ej: TEO)" />
+                </div>
+
               </div>
             </td>
           </tr>
