@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Ramo } from '../models/ramo.model';
+import { environment } from '../../environtment/environtment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RamoService {
 
-  private apiUrl = 'http://localhost:8080/api/ramos';
+  private apiUrl = `${environment.apiUrl}/api/ramos`;
 
   constructor(private http: HttpClient) {}
 

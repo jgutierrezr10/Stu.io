@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environtment/environtment.prod';
 
 export interface BloqueHorarioDTO {
   id: string;
@@ -17,7 +18,7 @@ export interface BloqueHorarioDTO {
 })
 export class HorarioService {
 
-  private apiUrl = 'http://localhost:8080/api/horario';
+  private apiUrl = `${environment.apiUrl}/api/horario`;
 
   constructor(private http: HttpClient) {}
 
