@@ -3,10 +3,13 @@ package com.example.avance.service;
 import com.example.avance.dto.RamoDTO;
 import com.example.avance.model.Ramo;
 import com.example.avance.model.Usuario;
+import com.example.avance.repository.BloqueHorarioRepository;
+import com.example.avance.repository.EvaluacionRepository;
 import com.example.avance.repository.RamoRepository;
 import com.example.avance.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,6 +20,8 @@ public class RamoService {
 
     private final RamoRepository ramoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final BloqueHorarioRepository bloqueHorarioRepository;
+    private final EvaluacionRepository evaluacionRepository;
 
     private RamoDTO toDTO(Ramo ramo) {
         RamoDTO dto = new RamoDTO();
@@ -36,6 +41,7 @@ public class RamoService {
                 .stream().map(this::toDTO).collect(Collectors.toList());
     }
 
+    @Transactional
     public RamoDTO crearRamo(RamoDTO dto, String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -49,6 +55,7 @@ public class RamoService {
         return toDTO(ramoRepository.save(ramo));
     }
 
+    @Transactional
     public RamoDTO actualizarRamo(Long id, RamoDTO dto, String email) {
         Ramo ramo = ramoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ramo no encontrado"));
@@ -67,6 +74,7 @@ public class RamoService {
         return toDTO(ramoRepository.save(ramo));
     }
 
+    @Transactional
     public RamoDTO cambiarEstado(Long id, Boolean aprobado, Boolean cursando, String email) {
         Ramo ramo = ramoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ramo no encontrado"));
@@ -78,12 +86,15 @@ public class RamoService {
         return toDTO(ramoRepository.save(ramo));
     }
 
+    @Transactional
     public void eliminarRamo(Long id, String email) {
         Ramo ramo = ramoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ramo no encontrado"));
         if (!ramo.getUsuario().getEmail().equals(email)) {
             throw new RuntimeException("No autorizado");
         }
+        // Limpiar todas las FK que referencian a este ramo
+        limpiarReferenciasRamo(id);
         ramoRepository.delete(ramo);
     }
 
@@ -96,13 +107,16 @@ public class RamoService {
         return (int) ((aprobados * 100) / total);
     }
 
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public List<RamoDTO> crearRamosBulk(List<RamoDTO> dtos, String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // Eliminar ramos existentes del usuario antes de cargar la malla
+        // Limpiar FK references antes de eliminar ramos existentes
         List<Ramo> existentes = ramoRepository.findByUsuarioId(usuario.getId());
+        for (Ramo r : existentes) {
+            limpiarReferenciasRamo(r.getId());
+        }
         ramoRepository.deleteAll(existentes);
 
         List<Ramo> nuevos = dtos.stream().map(dto -> {
@@ -120,12 +134,29 @@ public class RamoService {
                 .stream().map(this::toDTO).collect(Collectors.toList());
     }
 
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public void eliminarTodosLosRamos(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
+        // Limpiar FK references antes de eliminar
         List<Ramo> existentes = ramoRepository.findByUsuarioId(usuario.getId());
+        for (Ramo r : existentes) {
+            limpiarReferenciasRamo(r.getId());
+        }
         ramoRepository.deleteAll(existentes);
+    }
+
+    /**
+     * Limpia todas las referencias FK a un ramo antes de eliminarlo.
+     * Elimina evaluaciones y bloques_horario que referencian a este ramo.
+     */
+    private void limpiarReferenciasRamo(Long ramoId) {
+        // Eliminar evaluaciones de este ramo
+        evaluacionRepository.deleteByRamoId(ramoId);
+        // Nullificar referencias como ramo2 en horario
+        bloqueHorarioRepository.nullifyRamo2ByRamoId(ramoId);
+        // Eliminar bloques donde es ramo principal
+        bloqueHorarioRepository.deleteByRamoId(ramoId);
     }
 }

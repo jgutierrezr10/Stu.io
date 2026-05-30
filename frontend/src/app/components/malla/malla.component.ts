@@ -216,16 +216,26 @@ export class MallaComponent implements OnInit {
     ramo.cursando = nuevoCursando;
     this.cdr.detectChanges();
 
+    // Intentar PATCH primero, si falla hacer fallback a PUT
     this.ramoService.cambiarEstado(ramo.id!, nuevoAprobado, nuevoCursando).subscribe({
       next: () => {
         this.calcularAvance();
       },
       error: () => {
-        // Revertir si falla
-        ramo.aprobado = prevAprobado;
-        ramo.cursando = prevCursando;
-        this.cdr.detectChanges();
-        alert('Error al actualizar el estado');
+        // Fallback: intentar con PUT completo
+        const actualizado = { ...ramo, aprobado: nuevoAprobado, cursando: nuevoCursando };
+        this.ramoService.actualizarRamo(ramo.id!, actualizado).subscribe({
+          next: () => {
+            this.calcularAvance();
+          },
+          error: () => {
+            // Revertir si ambos fallan
+            ramo.aprobado = prevAprobado;
+            ramo.cursando = prevCursando;
+            this.cdr.detectChanges();
+            alert('Error al actualizar el estado');
+          }
+        });
       }
     });
   }

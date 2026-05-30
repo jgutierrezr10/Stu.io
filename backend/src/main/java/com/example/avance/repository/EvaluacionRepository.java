@@ -11,4 +11,5 @@ public interface EvaluacionRepository extends JpaRepository<Evaluacion, Long> {
     List<Evaluacion> findByRamoId(Long ramoId);
     List<Evaluacion> findByRamoUsuarioIdOrderByFechaAsc(Long usuarioId);
     List<Evaluacion> findByRamoUsuarioEmailOrderByFechaAsc(String email);
+    void deleteByRamoId(Long ramoId);
 }
