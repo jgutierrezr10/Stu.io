@@ -9,7 +9,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "https://stu-io.vercel.app", allowedHeaders = "*", allowCredentials = "true")
+@CrossOrigin(origins = "https://aulaproject.vercel.app", allowedHeaders = "*", allowCredentials = "true")
 @RequiredArgsConstructor
 public class AuthController {
 

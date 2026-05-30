@@ -62,7 +62,7 @@ public class SecurityConfig {
         // Autorizamos a tu entorno local de desarrollo y a tu frontend en producción
         config.setAllowedOrigins(List.of(
             "http://localhost:4200",
-            "https://stu-io.vercel.app"
+            "https://aulaproject.vercel.app"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
