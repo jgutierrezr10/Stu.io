@@ -101,10 +101,10 @@
           <button class="btn-primary" (click)="abrirFormulario()">
             <i class="bi bi-plus-lg"></i> Agregar ramo
           </button>
-          <button class="btn-secondary-dark" (click)="abrirModalMultiple()">
+          <button class="btn-secondary" (click)="abrirModalMultiple()">
             <i class="bi bi-list-check"></i> Agregar varios
           </button>
-          <button class="btn-secondary-dark" (click)="abrirModalImportar()">
+          <button class="btn-secondary" (click)="abrirModalImportar()">
             <i class="bi bi-file-earmark-arrow-up"></i> Importar
           </button>
         </div>
@@ -120,7 +120,7 @@
 
         <!-- Header con color por semestre -->
         <div class="semestre-header" [ngClass]="getSemestreColorClass(sem)">
-          <span>Semestre {{ sem }}</span>
+          <span (click)="toggleSemestre(sem)" style="cursor: pointer;" title="Cambiar estado de todos los ramos del semestre">Semestre {{ sem }}</span>
           <div class="semestre-acciones">
             <button class="btn-sem" (click)="abrirFormulario(sem)" title="Agregar ramo">
               <i class="bi bi-plus"></i>

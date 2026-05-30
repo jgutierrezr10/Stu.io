@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import Swal from 'sweetalert2';
 import { RamoService } from '../../services/ramo.service';
 import { HorarioService, BloqueHorarioDTO } from '../../services/horario.service';
 import { Ramo } from '../../models/ramo.model';
@@ -151,30 +152,41 @@ export class Horario implements OnInit {
       error: (err) => {
         console.error('Error al guardar horario:', err);
         this.guardando = false;
-        alert('Ocurrió un error al guardar tu horario.');
+        Swal.fire('Error', 'Ocurrió un error al guardar tu horario.', 'error');
       }
     });
   }
 
   limpiarHorario() {
-    if (confirm('¿Estás seguro de limpiar todo tu horario?')) {
-      this.guardando = true;
-      this.horarioService.limpiarHorario().subscribe({
-        next: () => {
-          this.grilla.forEach(b => {
-            b.ramoId = null;
-            b.ramo2Id = null;
-            b.detalle1 = '';
-            b.detalle2 = '';
-          });
-          this.guardando = false;
-        },
-        error: (err) => {
-          console.error('Error al limpiar horario:', err);
-          this.guardando = false;
-          alert('Ocurrió un error al limpiar tu horario.');
-        }
-      });
-    }
+    Swal.fire({
+      title: 'Limpiar horario',
+      text: '¿Estás seguro de limpiar todo tu horario?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, limpiar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.guardando = true;
+        this.horarioService.limpiarHorario().subscribe({
+          next: () => {
+            this.grilla.forEach(b => {
+              b.ramoId = null;
+              b.ramo2Id = null;
+              b.detalle1 = '';
+              b.detalle2 = '';
+            });
+            this.guardando = false;
+          },
+          error: (err) => {
+            console.error('Error al limpiar horario:', err);
+            this.guardando = false;
+            Swal.fire('Error', 'Ocurrió un error al limpiar tu horario.', 'error');
+          }
+        });
+      }
+    });
   }
 }

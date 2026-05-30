@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import Swal from 'sweetalert2';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -148,7 +149,7 @@ export class MallaComponent implements OnInit {
           this.mostrarFormulario = false;
           this.cargarRamos();
         },
-        error: () => alert('Error al actualizar el ramo')
+        error: () => Swal.fire('Atención', 'Error al actualizar el ramo', 'warning')
       });
     } else {
       this.ramoService.crearRamo(this.ramoActual).subscribe({
@@ -156,39 +157,53 @@ export class MallaComponent implements OnInit {
           this.mostrarFormulario = false;
           this.cargarRamos();
         },
-        error: () => alert('Error al crear el ramo')
+        error: () => Swal.fire('Atención', 'Error al crear el ramo', 'warning')
       });
     }
   }
 
   eliminarRamo(id: number) {
-    this.confirmacionTitulo = 'Eliminar ramo';
-    this.confirmacionMensaje = '¿Estás seguro de que deseas eliminar este ramo?';
-    this.accionConfirmacion = () => {
-      this.ramoService.eliminarRamo(id).subscribe({
-        next: () => {
-          this.mostrarModalConfirmacion = false;
-          this.cargarRamos();
-        },
-        error: () => alert('Error al eliminar el ramo')
-      });
-    };
-    this.mostrarModalConfirmacion = true;
+    Swal.fire({
+      title: 'Eliminar ramo',
+      text: '¿Estás seguro de que deseas eliminar este ramo?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.ramoService.eliminarRamo(id).subscribe({
+          next: () => {
+            this.cargarRamos();
+          },
+          error: () => Swal.fire('Atención', 'Error al eliminar el ramo', 'warning')
+        });
+      }
+    });
   }
 
   eliminarTodos() {
-    this.confirmacionTitulo = 'Eliminar todos los ramos';
-    this.confirmacionMensaje = '¿Estás seguro de que deseas eliminar TODOS los ramos? Esta acción no se puede deshacer.';
-    this.accionConfirmacion = () => {
-      this.ramoService.eliminarTodos().subscribe({
-        next: () => {
-          this.mostrarModalConfirmacion = false;
-          this.cargarRamos();
-        },
-        error: () => alert('Error al eliminar todos los ramos')
-      });
-    };
-    this.mostrarModalConfirmacion = true;
+    Swal.fire({
+      title: 'Eliminar todos los ramos',
+      text: '¿Estás seguro de que deseas eliminar TODOS los ramos? Esta acción no se puede deshacer.',
+      icon: 'error',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar TODO',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.ramoService.eliminarTodos().subscribe({
+          next: () => {
+            this.cargarRamos();
+          },
+          error: () => Swal.fire('Atención', 'Error al eliminar todos los ramos', 'warning')
+        });
+      }
+    });
   }
 
   toggleEstado(ramo: Ramo) {
@@ -233,9 +248,49 @@ export class MallaComponent implements OnInit {
             ramo.aprobado = prevAprobado;
             ramo.cursando = prevCursando;
             this.cdr.detectChanges();
-            alert('Error al actualizar el estado');
+            Swal.fire('Atención', 'Error al actualizar el estado', 'warning');
           }
         });
+      }
+    });
+  }
+
+  toggleSemestre(sem: number) {
+    const ramosSemestre = this.getRamosPorSemestre(sem);
+    if (ramosSemestre.length === 0) return;
+
+    // Determinar el nuevo estado basado en el primer ramo del semestre
+    const primerRamo = ramosSemestre[0];
+    let nuevoAprobado = false;
+    let nuevoCursando = false;
+
+    if (!primerRamo.aprobado && !primerRamo.cursando) {
+      nuevoCursando = true;
+    } else if (primerRamo.cursando) {
+      nuevoAprobado = true;
+    } else {
+      nuevoAprobado = false;
+      nuevoCursando = false;
+    }
+
+    // Update optimístico para todo el semestre
+    ramosSemestre.forEach(ramo => {
+      ramo.aprobado = nuevoAprobado;
+      ramo.cursando = nuevoCursando;
+    });
+    this.cdr.detectChanges();
+
+    const obs$ = ramosSemestre.map(ramo => 
+      this.ramoService.cambiarEstado(ramo.id!, nuevoAprobado, nuevoCursando)
+    );
+
+    forkJoin(obs$).subscribe({
+      next: () => {
+        this.calcularAvance();
+      },
+      error: () => {
+        Swal.fire('Atención', 'Hubo un error al actualizar los estados del semestre. Se recargarán los datos.', 'warning');
+        this.cargarRamos(); // Revertir a la verdad del servidor si falla el batch
       }
     });
   }
@@ -269,7 +324,7 @@ export class MallaComponent implements OnInit {
         this.cargarRamos();
       },
       error: () => {
-        alert('Error al agregar algunos ramos');
+        Swal.fire('Atención', 'Error al agregar algunos ramos', 'warning');
         this.cargarRamos();
       }
     });
@@ -302,7 +357,7 @@ export class MallaComponent implements OnInit {
     if (nombre.endsWith('.csv') || nombre.endsWith('.txt')) {
       this.procesarCSV(archivo);
     } else {
-      alert('Por ahora soportamos archivos .csv o .txt\nFormato: nombre,semestre (una por línea)');
+      Swal.fire('Atención', 'Por ahora soportamos archivos .csv o .txt\nFormato: nombre,semestre (una por línea)', 'warning');
       this.importando = false;
     }
   }
@@ -340,7 +395,7 @@ export class MallaComponent implements OnInit {
         this.cargarRamos();
       },
       error: () => {
-        alert('Error al importar algunos ramos');
+        Swal.fire('Atención', 'Error al importar algunos ramos', 'warning');
         this.cargarRamos();
       }
     });
@@ -368,7 +423,7 @@ export class MallaComponent implements OnInit {
       },
       error: () => {
         this.cargandoMalla = false;
-        alert('Error al cargar la malla predeterminada');
+        Swal.fire('Atención', 'Error al cargar la malla predeterminada', 'warning');
       }
     });
   }

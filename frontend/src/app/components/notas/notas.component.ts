@@ -7,6 +7,7 @@ import { RamoService } from '../../services/ramo.service';
 import { EvaluacionService } from '../../services/evaluacion.service';
 import { Ramo } from '../../models/ramo.model';
 import { Evaluacion } from '../../models/evaluacion.model';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-notas',
@@ -162,17 +163,28 @@ export class NotasComponent implements OnInit {
   }
 
   eliminarEvaluacion(evId: number, ramoId: number) {
-    if (confirm('¿Estás seguro de eliminar esta evaluación?')) {
-      this.evaluacionService.eliminarEvaluacion(evId).subscribe({
-        next: () => {
-          this.cargarDatos();
-        },
-        error: (err) => {
-          this.errorMsg[ramoId] = 'Error al eliminar la evaluación.';
-          console.error(err);
-        }
-      });
-    }
+    Swal.fire({
+      title: 'Eliminar evaluación',
+      text: '¿Estás seguro de eliminar esta evaluación?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.evaluacionService.eliminarEvaluacion(evId).subscribe({
+          next: () => {
+            this.cargarDatos();
+          },
+          error: (err) => {
+            this.errorMsg[ramoId] = 'Error al eliminar la evaluación.';
+            console.error(err);
+          }
+        });
+      }
+    });
   }
 
   // Edición directa de nota

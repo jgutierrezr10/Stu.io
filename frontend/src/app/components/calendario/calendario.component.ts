@@ -7,6 +7,7 @@ import { RamoService } from '../../services/ramo.service';
 import { EvaluacionService } from '../../services/evaluacion.service';
 import { Ramo } from '../../models/ramo.model';
 import { Evaluacion } from '../../models/evaluacion.model';
+import Swal from 'sweetalert2';
 
 interface CalendarDay {
   date: Date;
@@ -243,12 +244,23 @@ export class CalendarioComponent implements OnInit {
   }
 
   eliminarEvaluacion(evId: number) {
-    if (confirm('¿Eliminar esta evaluación?')) {
-      this.evaluacionService.eliminarEvaluacion(evId).subscribe({
-        next: () => { this.cargarEvaluaciones(); },
-        error: () => { this.errorMsg = 'Error al eliminar.'; }
-      });
-    }
+    Swal.fire({
+      title: 'Eliminar evaluación',
+      text: '¿Estás seguro de eliminar esta evaluación?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.evaluacionService.eliminarEvaluacion(evId).subscribe({
+          next: () => { this.cargarEvaluaciones(); },
+          error: () => { this.errorMsg = 'Error al eliminar.'; }
+        });
+      }
+    });
   }
 
   getRamoNombre(ramoId: number): string {
