@@ -43,6 +43,7 @@ html {
   font-family: 'Outfit', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-y: scroll; /* Fuerza la barra de desplazamiento para evitar saltos al cambiar de pestaña */
 }
 
 body {

@@ -1,7 +1,7 @@
 .cal-page {
   min-height: 100vh;
   background: #f8fafc;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: inherit;
   color: #1e293b;
 }
 

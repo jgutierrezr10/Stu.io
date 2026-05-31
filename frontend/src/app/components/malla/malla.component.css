@@ -4,11 +4,11 @@
 
 .layout {
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--bg-card);
   display: flex;
   flex-direction: column;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: #1a1a2e;
+  font-family: inherit;
+  color: var(--text-main);
 }
 
 /* ══════════════════════════════════════
