@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
-import { firstValueFrom, timeout, catchError, of } from 'rxjs';
+import { forkJoin, timeout, catchError, of } from 'rxjs';
 import { RamoService } from '../../services/ramo.service';
 import { HorarioService, BloqueHorarioDTO } from '../../services/horario.service';
 import { Ramo } from '../../models/ramo.model';
@@ -61,54 +61,53 @@ export class Horario implements OnInit {
     this.cargarDatos();
   }
 
-  async cargarDatos() {
+  cargarDatos() {
     this.cargandoHorario = true;
     const TIMEOUT_MS = 15000; // 15 segundos de timeout
-    try {
-      const ramosPromise = firstValueFrom(
-        this.ramoService.getRamos().pipe(
-          timeout(TIMEOUT_MS),
-          catchError(err => {
-            console.error('Error/timeout al cargar ramos:', err);
-            return of([] as Ramo[]);
-          })
-        )
-      );
-      const bloquesPromise = firstValueFrom(
-        this.horarioService.obtenerHorario().pipe(
-          timeout(TIMEOUT_MS),
-          catchError(err => {
-            console.error('Error/timeout al cargar bloques del horario:', err);
-            return of([] as BloqueHorarioDTO[]);
-          })
-        )
-      );
-      
-      const [ramos, bloques] = await Promise.all([ramosPromise, bloquesPromise]);
-      
-      this.ramosCursando = (ramos ?? []).filter(r => r.cursando);
-      
-      this.grilla = this.grilla.map(b => {
-        const dbBloque = (bloques ?? []).find(db => db.dia === b.dia && db.hora === b.hora);
-        if (dbBloque) {
-          b.ramoId = dbBloque.ramoId;
-          b.ramo2Id = dbBloque.ramo2Id;
-          b.detalle1 = dbBloque.detalle1 || '';
-          b.detalle2 = dbBloque.detalle2 || '';
-        }
-        return b;
-      });
+    
+    const ramos$ = this.ramoService.getRamos().pipe(
+      timeout(TIMEOUT_MS),
+      catchError(err => {
+        console.error('Error/timeout al cargar ramos:', err);
+        return of([] as Ramo[]);
+      })
+    );
+    
+    const bloques$ = this.horarioService.obtenerHorario().pipe(
+      timeout(TIMEOUT_MS),
+      catchError(err => {
+        console.error('Error/timeout al cargar bloques del horario:', err);
+        return of([] as BloqueHorarioDTO[]);
+      })
+    );
 
-      // Si ambas llamadas fallaron, mostrar alerta
-      if ((ramos ?? []).length === 0 && (bloques ?? []).length === 0) {
-        console.warn('No se pudieron obtener datos. El servidor puede estar iniciándose.');
+    forkJoin({ ramos: ramos$, bloques: bloques$ }).subscribe({
+      next: ({ ramos, bloques }) => {
+        this.ramosCursando = (ramos ?? []).filter(r => r.cursando);
+        
+        this.grilla = this.grilla.map(b => {
+          const dbBloque = (bloques ?? []).find(db => db.dia === b.dia && db.hora === b.hora);
+          if (dbBloque) {
+            b.ramoId = dbBloque.ramoId;
+            b.ramo2Id = dbBloque.ramo2Id;
+            b.detalle1 = dbBloque.detalle1 || '';
+            b.detalle2 = dbBloque.detalle2 || '';
+          }
+          return b;
+        });
+
+        // Si ambas llamadas fallaron, mostrar alerta
+        if ((ramos ?? []).length === 0 && (bloques ?? []).length === 0) {
+          console.warn('No se pudieron obtener datos. El servidor puede estar iniciándose.');
+        }
+        this.cargandoHorario = false;
+      },
+      error: (err) => {
+        console.error('Error al cargar datos del horario:', err);
+        Swal.fire('Atención', 'Hubo un problema al cargar tu horario. El servidor puede estar iniciándose, intenta recargar en unos segundos.', 'error');
+        this.cargandoHorario = false;
       }
-    } catch (err) {
-      console.error('Error al cargar datos del horario:', err);
-      Swal.fire('Atención', 'Hubo un problema al cargar tu horario. El servidor puede estar iniciándose, intenta recargar en unos segundos.', 'error');
-    } finally {
-      this.cargandoHorario = false;
-    }
+    });
   }
 
   cargarEtiquetasGuardadas() {
