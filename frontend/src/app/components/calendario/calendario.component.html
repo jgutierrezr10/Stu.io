@@ -91,7 +91,7 @@
           <span class="badge-month">{{ monthNames[selectedDay.date.getMonth()] }}</span>
         </div>
         <div>
-          <h2>{{ selectedDay.isToday ? '¡Hoy! — ' : '' }}{{ selectedDay.date | date:'EEEE':'':'es' }}</h2>
+          <h2>{{ selectedDay.isToday ? '¡Hoy! — ' : '' }}{{ fullWeekDays[selectedDay.date.getDay()] }}</h2>
           <p>{{ selectedDay.evaluaciones.length }} evaluación(es) programada(s)</p>
         </div>
       </div>
