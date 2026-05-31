@@ -48,13 +48,15 @@ export class NotasComponent implements OnInit {
     this.cargarDatos();
   }
 
-  cargarDatos() {
-    this.loading = true;
+  cargarDatos(silent = false) {
+    if (!silent) {
+      this.loading = true;
+    }
     this.ramoService.getRamos().subscribe({
       next: (ramos) => {
         this.ramos = ramos;
         this.inicializarNuevasEvs();
-        this.cargarEvaluaciones();
+        this.cargarEvaluaciones(silent);
       },
       error: (err) => {
         console.error('Error al cargar ramos', err);
@@ -64,12 +66,15 @@ export class NotasComponent implements OnInit {
     });
   }
 
-  cargarEvaluaciones() {
+  cargarEvaluaciones(silent = false) {
+    if (!silent) {
+      this.loading = true;
+    }
     this.evaluacionService.getEvaluaciones().subscribe({
       next: (evs) => {
         this.evaluaciones = evs;
         this.agruparEvaluaciones();
-        this.crearEvaluacionesPorDefecto();
+        this.crearEvaluacionesPorDefecto(silent);
       },
       error: (err) => {
         console.error('Error al cargar evaluaciones', err);
@@ -167,11 +172,12 @@ export class NotasComponent implements OnInit {
 
     this.evaluacionService.crearEvaluacion(evaluacionObj).subscribe({
       next: (guardada) => {
-        // Recargar datos
-        this.cargarDatos();
+        // Recargar datos de forma silenciosa
+        this.cargarDatos(true);
       },
       error: (err) => {
         this.errorMsg[ramoId] = 'Error al guardar la evaluación.';
+        this.cdr.detectChanges();
         console.error(err);
       }
     });
@@ -191,7 +197,7 @@ export class NotasComponent implements OnInit {
       if (result.isConfirmed) {
         this.evaluacionService.eliminarEvaluacion(evId).subscribe({
           next: () => {
-            this.cargarDatos();
+            this.cargarDatos(true);
           },
           error: (err) => {
             this.errorMsg[ramoId] = 'Error al eliminar la evaluación.';
@@ -216,14 +222,21 @@ export class NotasComponent implements OnInit {
       }
     }
 
+    // Actualizar localmente primero para respuesta instantánea (optimista)
+    ev.nota = notaParsed;
+    this.recalcularPromedioLocal(ramoId);
+    this.cdr.detectChanges();
+
     const updatedEv = { ...ev, nota: notaParsed };
     if (ev.id) {
       this.evaluacionService.actualizarEvaluacion(ev.id, updatedEv).subscribe({
         next: () => {
-          this.cargarDatos();
+          // Refrescar datos en segundo plano para sincronizar el estado
+          this.cargarDatos(true);
         },
         error: (err) => {
           this.errorMsg[ramoId] = 'Error al actualizar la nota.';
+          this.cdr.detectChanges();
           console.error(err);
         }
       });
@@ -247,7 +260,7 @@ export class NotasComponent implements OnInit {
     return 'Fecha inválida';
   }
 
-  crearEvaluacionesPorDefecto() {
+  crearEvaluacionesPorDefecto(silent = false) {
     const evsParaCrear: any[] = [];
     
     if (this.ramos.length === 0) {
@@ -277,7 +290,9 @@ export class NotasComponent implements OnInit {
     });
 
     if (evsParaCrear.length > 0) {
-      this.loading = true;
+      if (!silent) {
+        this.loading = true;
+      }
       this.cdr.detectChanges();
       
       forkJoin(evsParaCrear).subscribe({
@@ -492,7 +507,7 @@ export class NotasComponent implements OnInit {
         next: () => {
           this.editandoEvId = null;
           this.evEditando = {};
-          this.cargarDatos();
+          this.cargarDatos(true);
         },
         error: (err) => {
           this.errorMsg[ramoId] = 'Error al actualizar la evaluación.';
@@ -500,6 +515,30 @@ export class NotasComponent implements OnInit {
           console.error(err);
         }
       });
+    }
+  }
+
+  recalcularPromedioLocal(ramoId: number) {
+    const ramo = this.ramos.find(r => r.id === ramoId);
+    if (!ramo) return;
+
+    const evs = this.evaluacionesPorRamo[ramoId] || [];
+    let sumNotasPonderadas = 0;
+    let sumPonderacionesConNota = 0;
+
+    evs.forEach(ev => {
+      if (ev.nota !== null && ev.nota !== undefined) {
+        sumNotasPonderadas += ev.nota * ev.ponderacion;
+        sumPonderacionesConNota += ev.ponderacion;
+      }
+    });
+
+    if (sumPonderacionesConNota > 0) {
+      let finalNota = sumNotasPonderadas / sumPonderacionesConNota;
+      finalNota = Math.round(finalNota * 10.0) / 10.0;
+      ramo.nota = finalNota;
+    } else {
+      ramo.nota = undefined;
     }
   }
 
