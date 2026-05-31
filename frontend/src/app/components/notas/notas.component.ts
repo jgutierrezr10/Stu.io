@@ -211,29 +211,129 @@ export class NotasComponent implements OnInit {
     });
   }
 
-  // Edición directa de nota
-  actualizarNota(ev: Evaluacion, nuevaNotaVal: any, ramoId: number) {
-    this.errorMsg[ramoId] = '';
-    let notaParsed: number | undefined = undefined;
+  formatNotaDisplay(nota?: number): string {
+    if (nota === undefined || nota === null) return '';
+    return nota.toFixed(1);
+  }
 
-    if (nuevaNotaVal !== '' && nuevaNotaVal !== null && nuevaNotaVal !== undefined) {
-      notaParsed = parseFloat(nuevaNotaVal);
-      if (isNaN(notaParsed) || notaParsed < 1.0 || notaParsed > 7.0) {
-        this.errorMsg[ramoId] = 'La nota debe estar entre 1.0 y 7.0.';
-        return;
-      }
+  onNotaInput(event: Event, ev: Evaluacion, ramoId: number) {
+    const input = event.target as HTMLInputElement;
+    let val = input.value;
+
+    // Solo permitir números y un punto decimal
+    val = val.replace(/[^0-9.]/g, '');
+
+    // Evitar múltiples puntos
+    const parts = val.split('.');
+    if (parts.length > 2) {
+      val = parts[0] + '.' + parts.slice(1).join('');
     }
 
-    // Actualizar localmente primero para respuesta instantánea (optimista)
-    ev.nota = notaParsed;
+    // Poner el punto automáticamente si escriben dos dígitos seguidos sin él (ej: "55" -> "5.5")
+    if (/^[0-9]{2}$/.test(val)) {
+      val = val[0] + '.' + val[1];
+    }
+
+    // Impedir notas mayores a 7.0
+    let num = parseFloat(val);
+    if (!isNaN(num) && num > 7.0) {
+      val = '7.0';
+    }
+
+    input.value = val;
+
+    if (val === '') {
+      this.actualizarNotaSilenciosa(ev, undefined, ramoId);
+    } else if (/^[1-7](\.[0-9])?$/.test(val)) {
+      const parsed = parseFloat(val);
+      this.actualizarNotaSilenciosa(ev, parsed, ramoId);
+    }
+  }
+
+  onNotaBlur(event: Event, ev: Evaluacion, ramoId: number) {
+    const input = event.target as HTMLInputElement;
+    let val = input.value.trim();
+
+    if (val === '') {
+      this.actualizarNotaSilenciosa(ev, undefined, ramoId);
+      return;
+    }
+
+    let num = parseFloat(val);
+    if (isNaN(num) || num < 1.0) {
+      num = 1.0;
+    } else if (num > 7.0) {
+      num = 7.0;
+    }
+
+    num = Math.round(num * 10) / 10;
+    input.value = num.toFixed(1);
+    this.actualizarNotaSilenciosa(ev, num, ramoId);
+  }
+
+  onNotaInputEdit(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let val = input.value;
+
+    val = val.replace(/[^0-9.]/g, '');
+
+    const parts = val.split('.');
+    if (parts.length > 2) {
+      val = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    if (/^[0-9]{2}$/.test(val)) {
+      val = val[0] + '.' + val[1];
+    }
+
+    let num = parseFloat(val);
+    if (!isNaN(num) && num > 7.0) {
+      val = '7.0';
+    }
+
+    input.value = val;
+
+    if (val === '') {
+      this.evEditando.nota = undefined;
+    } else if (/^[1-7](\.[0-9])?$/.test(val)) {
+      this.evEditando.nota = parseFloat(val);
+    }
+  }
+
+  onNotaBlurEdit(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let val = input.value.trim();
+
+    if (val === '') {
+      this.evEditando.nota = undefined;
+      return;
+    }
+
+    let num = parseFloat(val);
+    if (isNaN(num) || num < 1.0) {
+      num = 1.0;
+    } else if (num > 7.0) {
+      num = 7.0;
+    }
+
+    num = Math.round(num * 10) / 10;
+    input.value = num.toFixed(1);
+    this.evEditando.nota = num;
+  }
+
+  actualizarNotaSilenciosa(ev: Evaluacion, nota: number | undefined, ramoId: number) {
+    this.errorMsg[ramoId] = '';
+    
+    if (ev.nota === nota) return;
+
+    ev.nota = nota;
     this.recalcularPromedioLocal(ramoId);
     this.cdr.detectChanges();
 
-    const updatedEv = { ...ev, nota: notaParsed };
+    const updatedEv = { ...ev, nota: nota };
     if (ev.id) {
       this.evaluacionService.actualizarEvaluacion(ev.id, updatedEv).subscribe({
         next: () => {
-          // Refrescar datos en segundo plano para sincronizar el estado
           this.cargarDatos(true);
         },
         error: (err) => {

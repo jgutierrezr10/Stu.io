@@ -310,4 +310,59 @@ export class CalendarioComponent implements OnInit {
     const classes = ['ev-indigo', 'ev-emerald', 'ev-amber', 'ev-rose', 'ev-violet'];
     return classes[index % classes.length];
   }
+
+  formatNotaDisplay(nota?: number): string {
+    if (nota === undefined || nota === null) return '';
+    return nota.toFixed(1);
+  }
+
+  onNotaInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let val = input.value;
+
+    val = val.replace(/[^0-9.]/g, '');
+
+    const parts = val.split('.');
+    if (parts.length > 2) {
+      val = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    if (/^[0-9]{2}$/.test(val)) {
+      val = val[0] + '.' + val[1];
+    }
+
+    let num = parseFloat(val);
+    if (!isNaN(num) && num > 7.0) {
+      val = '7.0';
+    }
+
+    input.value = val;
+
+    if (val === '') {
+      this.nuevaEv.nota = undefined;
+    } else if (/^[1-7](\.[0-9])?$/.test(val)) {
+      this.nuevaEv.nota = parseFloat(val);
+    }
+  }
+
+  onNotaBlur(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let val = input.value.trim();
+
+    if (val === '') {
+      this.nuevaEv.nota = undefined;
+      return;
+    }
+
+    let num = parseFloat(val);
+    if (isNaN(num) || num < 1.0) {
+      num = 1.0;
+    } else if (num > 7.0) {
+      num = 7.0;
+    }
+
+    num = Math.round(num * 10) / 10;
+    input.value = num.toFixed(1);
+    this.nuevaEv.nota = num;
+  }
 }

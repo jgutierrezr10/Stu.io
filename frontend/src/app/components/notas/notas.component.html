@@ -123,12 +123,10 @@
                 <span class="col-grade val-grade">
                   <input 
                     *ngIf="ev.ponderacion > 0"
-                    type="number" 
-                    step="0.1" 
-                    min="1.0" 
-                    max="7.0" 
-                    [ngModel]="ev.nota" 
-                    (ngModelChange)="actualizarNota(ev, $event, ramo.id!)"
+                    type="text" 
+                    [value]="formatNotaDisplay(ev.nota)" 
+                    (input)="onNotaInput($event, ev, ramo.id!)"
+                    (blur)="onNotaBlur($event, ev, ramo.id!)"
                     placeholder="--"
                     class="grade-input"
                   >
@@ -173,11 +171,10 @@
                 <span class="col-grade val-grade">
                   <input 
                     *ngIf="evEditando.ponderacion !== 0"
-                    type="number" 
-                    step="0.1" 
-                    min="1.0" 
-                    max="7.0" 
-                    [(ngModel)]="evEditando.nota"
+                    type="text" 
+                    [value]="formatNotaDisplay(evEditando.nota)"
+                    (input)="onNotaInputEdit($event)"
+                    (blur)="onNotaBlurEdit($event)"
                     placeholder="--"
                     class="grade-input"
                   >
