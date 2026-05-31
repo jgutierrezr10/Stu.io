@@ -31,6 +31,9 @@ public class UsuarioService {
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("El email ya está registrado");
         }
+        if (usuarioRepository.existsByNombre(request.getNombre())) {
+            throw new RuntimeException("El nombre de usuario ya está en uso");
+        }
 
         Usuario usuario = new Usuario();
         usuario.setNombre(request.getNombre());
@@ -73,7 +76,10 @@ public class UsuarioService {
             throw new RuntimeException("Debe ingresar su contraseña actual para establecer una nueva");
         }
 
-        if (request.getNombre() != null && !request.getNombre().isEmpty()) {
+        if (request.getNombre() != null && !request.getNombre().isEmpty() && !request.getNombre().equalsIgnoreCase(usuario.getNombre())) {
+            if (usuarioRepository.existsByNombre(request.getNombre())) {
+                throw new RuntimeException("El nuevo nombre de usuario ya está en uso");
+            }
             usuario.setNombre(request.getNombre());
         }
 
