@@ -36,20 +36,18 @@
 }
 
 .brand-icon {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, var(--primary-color), var(--accent-cyan));
-  border-radius: 16px;
+  width: 80px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 12px 30px rgba(108, 99, 255, 0.4);
+  margin-bottom: 1rem;
 }
 
-.brand-icon i {
-  font-size: 32px;
-  color: white;
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .auth-brand h1 {
