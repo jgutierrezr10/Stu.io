@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { Navbar } from '../shared/navbar/navbar';
 import { RamoService } from '../../services/ramo.service';
 import { EvaluacionService } from '../../services/evaluacion.service';
@@ -64,8 +65,7 @@ export class NotasComponent implements OnInit {
       next: (evs) => {
         this.evaluaciones = evs;
         this.agruparEvaluaciones();
-        this.loading = false;
-        this.cdr.detectChanges();
+        this.crearEvaluacionesPorDefecto();
       },
       error: (err) => {
         console.error('Error al cargar evaluaciones', err);
@@ -234,5 +234,199 @@ export class NotasComponent implements OnInit {
       }
     }
     return 'Fecha inválida';
+  }
+
+  crearEvaluacionesPorDefecto() {
+    const evsParaCrear: any[] = [];
+    
+    if (this.ramos.length === 0) {
+      this.loading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    // Solo crear por defecto para los ramos que se están cursando
+    const ramosCursando = this.ramos.filter(r => r.cursando);
+
+    ramosCursando.forEach(ramo => {
+      if (ramo.id) {
+        const evsDelRamo = this.evaluacionesPorRamo[ramo.id] || [];
+        if (evsDelRamo.length === 0) {
+          const defaults = [
+            { nombre: 'Certamen 1', ponderacion: 25, ramoId: ramo.id },
+            { nombre: 'Certamen 2', ponderacion: 25, ramoId: ramo.id },
+            { nombre: 'Certamen 3', ponderacion: 25, ramoId: ramo.id },
+            { nombre: 'Taller', ponderacion: 25, ramoId: ramo.id }
+          ];
+          defaults.forEach(d => {
+            evsParaCrear.push(this.evaluacionService.crearEvaluacion(d));
+          });
+        }
+      }
+    });
+
+    if (evsParaCrear.length > 0) {
+      this.loading = true;
+      this.cdr.detectChanges();
+      
+      forkJoin(evsParaCrear).subscribe({
+        next: () => {
+          this.evaluacionService.getEvaluaciones().subscribe({
+            next: (evs) => {
+              this.evaluaciones = evs;
+              this.agruparEvaluaciones();
+              this.loading = false;
+              this.cdr.detectChanges();
+            },
+            error: (err) => {
+              console.error('Error al recargar evaluaciones tras crear defaults:', err);
+              this.loading = false;
+              this.cdr.detectChanges();
+            }
+          });
+        },
+        error: (err) => {
+          console.error('Error al crear evaluaciones por defecto:', err);
+          this.loading = false;
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  getPromedioGeneral(): number | null {
+    const ramosConNota = this.getRamosFiltrados().filter(r => r.nota !== null && r.nota !== undefined);
+    if (ramosConNota.length === 0) return null;
+    const sum = ramosConNota.reduce((acc, r) => acc + (r.nota ?? 0), 0);
+    return sum / ramosConNota.length;
+  }
+
+  getPonderacionPromedio(): number {
+    const filtrados = this.getRamosFiltrados();
+    if (filtrados.length === 0) return 0;
+    const sum = filtrados.reduce((acc, r) => acc + this.getSumaPonderacion(r.id!), 0);
+    return Math.round(sum / filtrados.length);
+  }
+
+  getTotalEvaluacionesCount(): number {
+    let count = 0;
+    this.getRamosFiltrados().forEach(ramo => {
+      if (ramo.id && this.evaluacionesPorRamo[ramo.id]) {
+        count += this.evaluacionesPorRamo[ramo.id].length;
+      }
+    });
+    return count;
+  }
+
+  getPassingStatusMessage(ramoId: number): string {
+    const evs = this.evaluacionesPorRamo[ramoId] || [];
+    
+    // Sum of all weights (graded + ungraded)
+    const sumAllWeights = evs.reduce((sum, ev) => sum + ev.ponderacion, 0);
+    const T = Math.max(100, sumAllWeights);
+    
+    // Sum of graded weights and graded weighted score
+    let sumGradedWeights = 0;
+    let sumGradedScore = 0;
+    
+    evs.forEach(ev => {
+      if (ev.nota !== null && ev.nota !== undefined) {
+        sumGradedWeights += ev.ponderacion;
+        sumGradedScore += ev.nota * ev.ponderacion;
+      }
+    });
+
+    const remainingWeight = T - sumGradedWeights;
+    
+    // If no remaining weight (all evaluations graded)
+    if (remainingWeight <= 0) {
+      if (sumGradedWeights === 0) return 'Sin notas ingresadas';
+      const finalGrade = sumGradedScore / sumGradedWeights;
+      return finalGrade >= 4.0 ? '¡Ramo aprobado! 🎉' : 'Ramo reprobado 😢';
+    }
+
+    // Required grade on the remaining weight to reach an average of 4.0
+    // formula: (4.0 * T - sumGradedScore) / remainingWeight
+    const requiredGrade = (4.0 * T - sumGradedScore) / remainingWeight;
+
+    if (requiredGrade <= 1.0) {
+      return '¡Aprobado! (Suficiente con nota 1.0)';
+    } else if (requiredGrade > 7.0) {
+      return 'No alcanza (Requiere > 7.0) 😢';
+    } else {
+      const rounded = Math.ceil(requiredGrade * 10) / 10;
+      return `Falta nota ${rounded.toFixed(1)} prom. para pasar`;
+    }
+  }
+
+  getPassingStatusClass(ramoId: number): string {
+    const evs = this.evaluacionesPorRamo[ramoId] || [];
+    const sumAllWeights = evs.reduce((sum, ev) => sum + ev.ponderacion, 0);
+    const T = Math.max(100, sumAllWeights);
+    
+    let sumGradedWeights = 0;
+    let sumGradedScore = 0;
+    
+    evs.forEach(ev => {
+      if (ev.nota !== null && ev.nota !== undefined) {
+        sumGradedWeights += ev.ponderacion;
+        sumGradedScore += ev.nota * ev.ponderacion;
+      }
+    });
+
+    const remainingWeight = T - sumGradedWeights;
+    
+    if (remainingWeight <= 0) {
+      if (sumGradedWeights === 0) return 'status-pending';
+      const finalGrade = sumGradedScore / sumGradedWeights;
+      return finalGrade >= 4.0 ? 'status-passed' : 'status-failed';
+    }
+
+    const requiredGrade = (4.0 * T - sumGradedScore) / remainingWeight;
+
+    if (requiredGrade <= 1.0) {
+      return 'status-passed';
+    } else if (requiredGrade > 7.0) {
+      return 'status-failed';
+    } else {
+      return 'status-pending';
+    }
+  }
+
+  getPassingStatusIcon(ramoId: number): string {
+    const evs = this.evaluacionesPorRamo[ramoId] || [];
+    const sumAllWeights = evs.reduce((sum, ev) => sum + ev.ponderacion, 0);
+    const T = Math.max(100, sumAllWeights);
+    
+    let sumGradedWeights = 0;
+    let sumGradedScore = 0;
+    
+    evs.forEach(ev => {
+      if (ev.nota !== null && ev.nota !== undefined) {
+        sumGradedWeights += ev.ponderacion;
+        sumGradedScore += ev.nota * ev.ponderacion;
+      }
+    });
+
+    const remainingWeight = T - sumGradedWeights;
+    
+    if (remainingWeight <= 0) {
+      if (sumGradedWeights === 0) return 'bi-info-circle-fill';
+      const finalGrade = sumGradedScore / sumGradedWeights;
+      return finalGrade >= 4.0 ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
+    }
+
+    const requiredGrade = (4.0 * T - sumGradedScore) / remainingWeight;
+
+    if (requiredGrade <= 1.0) {
+      return 'bi-trophy-fill';
+    } else if (requiredGrade > 7.0) {
+      return 'bi-x-circle-fill';
+    } else {
+      return 'bi-calculator';
+    }
   }
 }

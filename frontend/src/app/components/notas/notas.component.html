@@ -32,6 +32,37 @@
       </div>
     </div>
 
+    <!-- Stats Banner -->
+    <div *ngIf="!loading && getRamosFiltrados().length > 0" class="stats-banner">
+      <div class="stat-card">
+        <div class="stat-icon icon-avg">
+          <i class="bi bi-mortarboard-fill"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Promedio General</span>
+          <span class="stat-value">{{ getPromedioGeneral() ? getPromedioGeneral()!.toFixed(2) : '--' }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-weight">
+          <i class="bi bi-percent"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Ponderación Promedio</span>
+          <span class="stat-value">{{ getPonderacionPromedio() }}%</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-evals">
+          <i class="bi bi-journal-check"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Total Evaluaciones</span>
+          <span class="stat-value">{{ getTotalEvaluacionesCount() }}</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Loading State -->
     <div *ngIf="loading" class="loading-state">
       <div class="spinner"></div>
@@ -145,28 +176,40 @@
           </div>
         </div>
 
-        <!-- Ramo Card Footer (Ponderation Sum) -->
+        <!-- Ramo Card Footer (Ponderation Sum & Passing Status) -->
         <div class="ramo-footer">
-          <div class="progress-info">
-            <span>Ponderación Total: <strong>{{ getSumaPonderacion(ramo.id!) }}%</strong> de 100%</span>
-            <div class="progress-bar-bg">
-              <div 
-                class="progress-bar-fill" 
-                [style.width.%]="getSumaPonderacion(ramo.id!)"
-                [ngClass]="{
-                  'complete': getSumaPonderacion(ramo.id!) === 100,
-                  'warning': getSumaPonderacion(ramo.id!) > 100,
-                  'incomplete': getSumaPonderacion(ramo.id!) < 100
-                }"
-              ></div>
+          <div class="progress-row">
+            <div class="progress-info">
+              <span>Ponderación Total: <strong>{{ getSumaPonderacion(ramo.id!) }}%</strong> de 100%</span>
+              <div class="progress-bar-bg">
+                <div 
+                  class="progress-bar-fill" 
+                  [style.width.%]="getSumaPonderacion(ramo.id!)"
+                  [ngClass]="{
+                    'complete': getSumaPonderacion(ramo.id!) === 100,
+                    'warning': getSumaPonderacion(ramo.id!) > 100,
+                    'incomplete': getSumaPonderacion(ramo.id!) < 100
+                  }"
+                ></div>
+              </div>
             </div>
           </div>
-          <span *ngIf="getSumaPonderacion(ramo.id!) < 100" class="weight-tip text-amber">
-            Falta {{ 100 - getSumaPonderacion(ramo.id!) }}% por definir
-          </span>
-          <span *ngIf="getSumaPonderacion(ramo.id!) === 100" class="weight-tip text-emerald">
-            <i class="bi bi-check-circle-fill"></i> Malla completa
-          </span>
+          <div class="status-row">
+            <div class="status-left">
+              <span *ngIf="getSumaPonderacion(ramo.id!) < 100" class="weight-tip text-amber">
+                Falta {{ 100 - getSumaPonderacion(ramo.id!) }}% por definir
+              </span>
+              <span *ngIf="getSumaPonderacion(ramo.id!) === 100" class="weight-tip text-emerald">
+                <i class="bi bi-check-circle-fill"></i> Malla completa
+              </span>
+            </div>
+            <div class="status-right">
+              <span class="passing-status" [ngClass]="getPassingStatusClass(ramo.id!)">
+                <i class="bi" [ngClass]="getPassingStatusIcon(ramo.id!)"></i>
+                {{ getPassingStatusMessage(ramo.id!) }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
