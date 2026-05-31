@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -23,6 +25,7 @@ public class UsuarioService {
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final JavaMailSender mailSender;
 
     public AuthResponse register(RegisterRequest request) {
         if (usuarioRepository.existsByEmail(request.getEmail())) {
@@ -103,11 +106,25 @@ public class UsuarioService {
         resetToken.setExpiryDate(LocalDateTime.now().plusHours(1)); // 1 hora de validez
         tokenRepository.save(resetToken);
 
-        // Simulando el envío de correo por consola
-        log.info("=========================================================");
-        log.info("SIMULACIÓN DE CORREO ENVIADO A: " + email);
-        log.info("Su código de recuperación de contraseña es: " + token);
-        log.info("=========================================================");
+        // Enviando el correo real
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("AULA - Recuperación de Contraseña");
+            message.setText("Hola " + usuario.getNombre() + ",\n\n" +
+                    "Hemos recibido una solicitud para restablecer la contraseña de tu cuenta.\n" +
+                    "Tu código de recuperación es: " + token + "\n\n" +
+                    "Ingresa este código en la aplicación junto con tu nueva contraseña.\n" +
+                    "Este código expirará en 1 hora.\n\n" +
+                    "Si no solicitaste este cambio, ignora este mensaje.\n\n" +
+                    "Saludos,\nEl equipo de AULA");
+
+            mailSender.send(message);
+            log.info("Correo de recuperación enviado exitosamente a: " + email);
+        } catch (Exception e) {
+            log.error("Error al enviar el correo a " + email, e);
+            throw new RuntimeException("Error al enviar el correo de recuperación. Por favor intenta más tarde.");
+        }
 
         return "Si el correo existe, se ha enviado un código de recuperación.";
     }
