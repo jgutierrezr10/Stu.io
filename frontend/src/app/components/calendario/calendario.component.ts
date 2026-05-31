@@ -66,10 +66,10 @@ export class CalendarioComponent implements OnInit {
   cargarDatos() {
     this.ramoService.getRamos().subscribe({
       next: (ramos) => {
-        this.ramos = ramos;
+        this.ramos = ramos.filter(r => r.cursando);
         // Pre-select first ramo in form
-        if (ramos.length > 0) {
-          this.nuevaEv.ramoId = ramos[0].id;
+        if (this.ramos.length > 0) {
+          this.nuevaEv.ramoId = this.ramos[0].id;
         }
         this.cargarEvaluaciones();
       },

@@ -73,7 +73,7 @@ public class BloqueHorarioService {
                 .collect(Collectors.toList());
                 
         bloqueHorarioRepository.saveAll(nuevosBloques);
-        return obtenerHorario(email);
+        return nuevosBloques.stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
     @Transactional
