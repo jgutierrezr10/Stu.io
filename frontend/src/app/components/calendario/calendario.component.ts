@@ -46,6 +46,7 @@ export class CalendarioComponent implements OnInit {
 
   // New evaluation form
   nuevaEv: Partial<Evaluacion> = {};
+  tipoEvento: 'evaluacion' | 'actividad' = 'evaluacion';
   errorMsg = '';
   guardando = false;
 
@@ -68,7 +69,9 @@ export class CalendarioComponent implements OnInit {
   cargarDatos() {
     this.ramoService.getRamos().subscribe({
       next: (ramos) => {
-        this.ramos = ramos.filter(r => r.cursando);
+        this.ramos = ramos
+          .filter(r => r.cursando)
+          .sort((a, b) => a.nombre.localeCompare(b.nombre));
         // Pre-select first ramo in form
         if (this.ramos.length > 0) {
           this.nuevaEv.ramoId = this.ramos[0].id;
@@ -204,6 +207,7 @@ export class CalendarioComponent implements OnInit {
   }
 
   resetForm(day: CalendarDay) {
+    this.tipoEvento = 'evaluacion';
     this.nuevaEv = {
       nombre: '',
       ponderacion: 20,
@@ -211,6 +215,15 @@ export class CalendarioComponent implements OnInit {
       fecha: this.toDateStr(day.date),
       ramoId: this.ramos.length > 0 ? this.ramos[0].id : undefined
     };
+  }
+
+  onTipoEventoChange() {
+    if (this.tipoEvento === 'actividad') {
+      this.nuevaEv.ponderacion = 0;
+      this.nuevaEv.nota = undefined;
+    } else {
+      this.nuevaEv.ponderacion = 20;
+    }
   }
 
   cerrarModal() {
@@ -229,9 +242,15 @@ export class CalendarioComponent implements OnInit {
       this.errorMsg = 'Debes seleccionar un ramo.';
       return;
     }
-    if (!this.nuevaEv.ponderacion || this.nuevaEv.ponderacion <= 0 || this.nuevaEv.ponderacion > 100) {
-      this.errorMsg = 'La ponderación debe estar entre 1% y 100%.';
-      return;
+
+    if (this.tipoEvento === 'evaluacion') {
+      if (this.nuevaEv.ponderacion === undefined || this.nuevaEv.ponderacion === null || this.nuevaEv.ponderacion <= 0 || this.nuevaEv.ponderacion > 100) {
+        this.errorMsg = 'La ponderación debe estar entre 1% y 100%.';
+        return;
+      }
+    } else {
+      this.nuevaEv.ponderacion = 0;
+      this.nuevaEv.nota = undefined;
     }
 
     this.guardando = true;

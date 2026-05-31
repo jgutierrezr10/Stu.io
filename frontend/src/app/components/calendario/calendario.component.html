@@ -102,17 +102,19 @@
 
     <!-- Existing Evaluations -->
     <div class="modal-events-list" *ngIf="selectedDay.evaluaciones.length > 0">
-      <h3>Evaluaciones del día</h3>
+      <h3>Eventos del día</h3>
       <div *ngFor="let ev of selectedDay.evaluaciones; let i = index" class="modal-event-item" [ngClass]="getColorClass(i)">
         <div class="ev-item-info">
           <span class="ev-ramo-lbl">{{ ev.ramoNombre }}</span>
           <span class="ev-nombre">{{ ev.nombre }}</span>
           <div class="ev-meta">
-            <span><i class="bi bi-percent"></i> {{ ev.ponderacion }}%</span>
-            <span *ngIf="ev.nota" class="ev-nota" [ngClass]="ev.nota >= 4.0 ? 'aprobado' : 'reprobado'">
+            <span *ngIf="ev.ponderacion > 0"><i class="bi bi-percent"></i> {{ ev.ponderacion }}%</span>
+            <span *ngIf="ev.ponderacion === 0" class="ev-actividad-lbl"><i class="bi bi-bookmark-fill"></i> Tarea / Actividad</span>
+            
+            <span *ngIf="ev.ponderacion > 0 && ev.nota" class="ev-nota" [ngClass]="ev.nota >= 4.0 ? 'aprobado' : 'reprobado'">
               Nota: {{ ev.nota.toFixed(1) }}
             </span>
-            <span *ngIf="!ev.nota" class="ev-pendiente">Pendiente</span>
+            <span *ngIf="ev.ponderacion > 0 && !ev.nota" class="ev-pendiente">Pendiente</span>
           </div>
         </div>
         <button (click)="eliminarEvaluacion(ev.id!)" class="btn-del-ev" title="Eliminar">
@@ -141,36 +143,47 @@
 
         <!-- Nombre -->
         <div class="form-field full">
-          <label>Nombre de la evaluación *</label>
+          <label>Nombre del Evento *</label>
           <input
             type="text"
-            placeholder="Ej: Certamen 1, Lab 2, Tarea..."
+            placeholder="Ej: Certamen 1, Lab 2, Tarea 1..."
             [(ngModel)]="nuevaEv.nombre"
             class="form-control"
           >
         </div>
 
-        <!-- Ponderación + Nota -->
-        <div class="form-field">
-          <label>Ponderación (%)</label>
-          <div class="input-with-unit">
-            <input type="number" min="1" max="100" [(ngModel)]="nuevaEv.ponderacion" class="form-control">
-            <span>%</span>
-          </div>
+        <!-- Tipo de Evento -->
+        <div class="form-field full">
+          <label>Tipo de Evento</label>
+          <select [(ngModel)]="tipoEvento" (change)="onTipoEventoChange()" class="form-control">
+            <option value="evaluacion">Evaluación con Nota (Certamen, Taller, etc.)</option>
+            <option value="actividad">Actividad sin Nota (Tarea, Lectura, etc.)</option>
+          </select>
         </div>
 
-        <div class="form-field">
-          <label>Nota (opcional)</label>
-          <input
-            type="number"
-            min="1.0"
-            max="7.0"
-            step="0.1"
-            placeholder="1.0 – 7.0"
-            [(ngModel)]="nuevaEv.nota"
-            class="form-control"
-          >
-        </div>
+        <!-- Ponderación + Nota -->
+        <ng-container *ngIf="tipoEvento === 'evaluacion'">
+          <div class="form-field">
+            <label>Ponderación (%)</label>
+            <div class="input-with-unit">
+              <input type="number" min="1" max="100" [(ngModel)]="nuevaEv.ponderacion" class="form-control">
+              <span>%</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>Nota (opcional)</label>
+            <input
+              type="number"
+              min="1.0"
+              max="7.0"
+              step="0.1"
+              placeholder="1.0 – 7.0"
+              [(ngModel)]="nuevaEv.nota"
+              class="form-control"
+            >
+          </div>
+        </ng-container>
       </div>
 
       <div *ngIf="errorMsg" class="error-msg">
@@ -179,7 +192,7 @@
 
       <button class="btn-guardar" (click)="guardarEvaluacion()" [disabled]="guardando">
         <i class="bi bi-check-lg" *ngIf="!guardando"></i>
-        <span>{{ guardando ? 'Guardando...' : 'Guardar Evaluación' }}</span>
+        <span>{{ guardando ? 'Guardando...' : 'Guardar' }}</span>
       </button>
     </div>
   </div>

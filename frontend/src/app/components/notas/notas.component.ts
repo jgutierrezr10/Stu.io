@@ -123,11 +123,13 @@ export class NotasComponent implements OnInit {
 
   // Filtrado de ramos
   getRamosFiltrados(): Ramo[] {
-    return this.ramos.filter(ramo => {
-      const cumpleSemestre = this.semestreSeleccionado === 0 || ramo.semestre === this.semestreSeleccionado;
-      const cumpleCursando = !this.soloCursando || ramo.cursando;
-      return cumpleSemestre && cumpleCursando;
-    });
+    return this.ramos
+      .filter(ramo => {
+        const cumpleSemestre = this.semestreSeleccionado === 0 || ramo.semestre === this.semestreSeleccionado;
+        const cumpleCursando = !this.soloCursando || ramo.cursando;
+        return cumpleSemestre && cumpleCursando;
+      })
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
   }
 
   getSumaPonderacion(ramoId: number): number {
@@ -484,8 +486,8 @@ export class NotasComponent implements OnInit {
       return;
     }
 
-    if (this.evEditando.ponderacion === undefined || this.evEditando.ponderacion <= 0 || this.evEditando.ponderacion > 100) {
-      this.errorMsg[ramoId] = 'La ponderación debe ser entre 1% y 100%.';
+    if (this.evEditando.ponderacion === undefined || this.evEditando.ponderacion < 0 || this.evEditando.ponderacion > 100) {
+      this.errorMsg[ramoId] = 'La ponderación debe ser entre 0% y 100%.';
       return;
     }
 
@@ -501,6 +503,9 @@ export class NotasComponent implements OnInit {
     }
 
     const updatedEv = { ...this.evEditando } as Evaluacion;
+    if (updatedEv.ponderacion === 0) {
+      updatedEv.nota = undefined;
+    }
 
     if (this.editandoEvId) {
       this.evaluacionService.actualizarEvaluacion(this.editandoEvId, updatedEv).subscribe({

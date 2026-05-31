@@ -822,3 +822,11 @@ input:checked + .switch-slider:before {
 .btn-cancel-ev:hover {
   background: #475569;
 }
+
+.non-graded-placeholder {
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: block;
+  text-align: center;
+}

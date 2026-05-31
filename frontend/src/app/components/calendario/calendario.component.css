@@ -562,3 +562,11 @@
   .form-grid { grid-template-columns: 1fr; }
   .form-field.full { grid-column: 1; }
 }
+
+.ev-actividad-lbl {
+  color: #64748b;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
